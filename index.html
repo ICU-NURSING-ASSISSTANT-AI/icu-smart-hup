@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICU Smart Hub | Al Baha</title>
+<style>
+:root {
+  --navy: #153b5b;
+  --blue: #2476a8;
+  --pale: #edf5fb;
+  --white: #ffffff;
+  --text: #23364a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f7fb;
+  color: var(--text);
+}
+header {
+  background: var(--navy);
+  color: white;
+  padding: 26px 7%;
+}
+header h1 { margin: 0 0 8px; font-size: 27px; }
+header p { margin: 0; color: #d7e8f6; }
+main { max-width: 1050px; margin: 28px auto; padding: 0 18px; }
+.intro {
+  background: white;
+  padding: 24px;
+  border-radius: 14px;
+  margin-bottom: 22px;
+  border: 1px solid #dce7f0;
+}
+h2 { color: var(--navy); }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: white;
+  border: 1px solid #dce7f0;
+  border-radius: 14px;
+  padding: 21px;
+  box-shadow: 0 3px 12px #173b5b0a;
+}
+.card .icon { font-size: 30px; }
+.card h3 { color: var(--navy); margin-bottom: 8px; }
+button {
+  background: var(--blue);
+  color: white;
+  border: 0;
+  padding: 11px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { background: var(--navy); }
+.panel {
+  display: none;
+  background: white;
+  padding: 22px;
+  margin-top: 20px;
+  border-radius: 14px;
+  border: 1px solid #dce7f0;
+}
+input, select {
+  width: 100%;
+  max-width: 450px;
+  padding: 12px;
+  margin: 7px 0 14px;
+  border: 1px solid #bdccda;
+  border-radius: 7px;
+}
+.notice {
+  background: #fff5df;
+  border-left: 4px solid #d49a24;
+  padding: 12px;
+  margin-top: 15px;
+  font-size: 14px;
+}
+footer {
+  text-align: center;
+  padding: 25px;
+  color: #60758a;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ICU Smart Hub</h1>
+  <p>Al Baha Health Cluster | Nursing Resources & Clinical Support</p>
+</header>
+
+<main>
+  <section class="intro">
+    <h2>Welcome to ICU Smart Hub</h2>
+    <p>A central starting point for ICU policies, performance indicators
+    and clinical learning resources.</p>
+    <p><strong>Prototype version</strong> — demonstration only.</p>
+  </section>
+
+  <section class="grid">
+    <article class="card">
+      <div class="icon">📚</div>
+      <h3>Policies & Procedures</h3>
+      <p>Find ICU policies and clinical procedures.</p>
+      <button onclick="showPanel('policies')">Open Policies</button>
+    </article>
+
+    <article class="card">
+      <div class="icon">📊</div>
+      <h3>ICU KPI Dashboard</h3>
+      <p>Review performance indicators and targets.</p>
+      <button onclick="showPanel('kpis')">Open KPIs</button>
+    </article>
+
+    <article class="card">
+      <div class="icon">🧮</div>
+      <h3>Clinical Calculators</h3>
+      <p>Explore a basic educational calculation tool.</p>
+      <button onclick="showPanel('calculator')">Open Calculator</button>
+    </article>
+
+    <article class="card">
+      <div class="icon">💬</div>
+      <h3>Smart Assistant</h3>
+      <p>Search for a topic or clinical resource.</p>
+      <button onclick="showPanel('assistant')">Ask Assistant</button>
+    </article>
+  </section>
+
+  <section class="panel" id="policies">
+    <h2>Policies & Procedures</h2>
+    <p>Approved ICU policies will be listed here.</p>
+    <input id="policySearch" placeholder="Search policy title..."
+      oninput="searchPolicy()">
+    <ul id="policyResults">
+      <li>Upload approved policy titles when authorized.</li>
+    </ul>
+    <p id="policyMessage"></p>
+  </section>
+
+  <section class="panel" id="kpis">
+    <h2>ICU KPI Dashboard</h2>
+    <p>Example indicators — replace with validated, approved data.</p>
+    <ul>
+      <li>Bed Occupancy Rate</li>
+      <li>Device-Associated Infection Rate</li>
+      <li>Patient Falls Rate</li>
+      <li>Nursing Compliance Indicators</li>
+    </ul>
+    <p>No actual performance data has been connected.</p>
+  </section>
+
+  <section class="panel" id="calculator">
+    <h2>Educational Drug Calculation</h2>
+    <p>Enter a prescribed dose and a matching concentration
+      to demonstrate a basic volume calculation.</p>
+    <label>Prescribed dose (mg)</label><br>
+    <input type="number" id="dose" min="0.001" step="any"
+      placeholder="e.g. 5">
+    <br>
+    <label>Available concentration (mg/mL)</label><br>
+    <input type="number" id="concentration" min="0.001" step="any"
+      placeholder="e.g. 2">
+    <br>
+    <button onclick="calculateVolume()">Calculate Example</button>
+    <p id="calcResult" aria-live="polite"></p>
+    <div class="notice">
+      Educational demonstration only. Not validated for clinical use.
+      Always verify the medication, units, prescription, patient factors
+      and calculation with an authorized clinician and approved protocol.
+    </div>
+  </section>
+
+  <section class="panel" id="assistant">
+    <h2>Smart Assistant — Demo Search</h2>
+    <p>This prototype searches example topics only. It is not connected
+      to an AI service or an approved policy library.</p>
+    <input id="topic" placeholder="e.g. drug calculation, infection prevention">
+    <br>
+    <button onclick="searchTopic()">Search Topics</button>
+    <p id="topicResult" aria-live="polite"></p>
+    <div class="notice">
+      Do not enter patient-identifiable information or confidential data.
+      This search does not provide clinical advice.
+    </div>
+  </section>
+</main>
+
+<footer>
+  ICU Smart Hub | Al Baha Health Cluster<br>
+  Prototype for review — not an approved clinical system.
+</footer>
+
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(
+    panel => panel.style.display = 'none'
+  );
+  document.getElementById(id).style.display = 'block';
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+}
+
+const policyExamples = [
+  'Infection Prevention and Control',
+  'Medication Safety',
+  'Patient Identification',
+  'Hand Hygiene',
+  'Clinical Documentation'
+];
+
+function searchPolicy() {
+  const query = document.getElementById('policySearch')
+    .value.trim().toLowerCase();
+  const results = policyExamples.filter(item =>
+    item.toLowerCase().includes(query)
+  );
+  document.getElementById('policyResults').innerHTML =
+    results.length
+      ? results.map(item => '<li>' + item + '</li>').join('')
+      : '<li>No matching demo topic found.</li>';
+  document.getElementById('policyMessage').textContent =
+    'These are example titles, not verified cluster policies.';
+}
+
+function calculateVolume() {
+  const dose = Number(document.getElementById('dose').value);
+  const concentration = Number(
+    document.getElementById('concentration').value
+  );
+  const result = document.getElementById('calcResult');
+
+  if (!(dose > 0) || !(concentration > 0)) {
+    result.textContent = 'Enter positive values in matching units.';
+    return;
+  }
+
+  result.textContent =
+    'Mathematical example: ' +
+    (dose / concentration).toFixed(3) +
+    ' mL. This is not a clinical recommendation.';
+}
+
+function searchTopic() {
+  const topic = document.getElementById('topic').value.trim().toLowerCase();
+  const result = document.getElementById('topicResult');
+
+  if (!topic) {
+    result.textContent = 'Enter a topic to search.';
+  } else if (topic.includes('drug') || topic.includes('medication')) {
+    result.textContent =
+      'Medication safety resource requested. Consult the approved policy.';
+  } else if (topic.includes('infection') || topic.includes('hand hygiene')) {
+    result.textContent =
+      'Infection prevention resource requested. Consult the approved policy.';
+  } else if (topic.includes('calculation')) {
+    result.textContent =
+      'Open Clinical Calculators for the educational demonstration.';
+  } else {
+    result.textContent =
+      'No connected AI or approved document search is available yet.';
+  }
+}
+</script>
+</body>
+</html>
