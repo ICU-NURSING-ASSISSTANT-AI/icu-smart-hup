@@ -158,7 +158,7 @@ fetch("https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/cont
   const library = document.getElementById("policyLibrary");
   library.innerHTML = pdfs.map(f => `
     <p>
-      📄 <a href="${f.download_url}" target="_blank"
+     <a href="./${encodeURIComponent(f.name)}" target="_blank"
       rel="noopener noreferrer">${f.name}</a>
     </p>
   `).join("");
