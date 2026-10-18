@@ -145,9 +145,29 @@ footer {
     <p>Approved ICU policies will be listed here.</p>
     <input id="policySearch" placeholder="Search policy title..."
       oninput="searchPolicy()">
-    <ul id="policyResults">
-      <li>Upload approved policy titles when authorized.</li>
-    </ul>
+  
+    <ul id="policyResults"></ul>
+<div id="policyLibrary"></div>
+<script>
+fetch("https://api.github.com/repos/ICU-NURSING-ASSISTANT-AI/icu-smart-hup/contents/")
+.then(r => r.json())
+.then(files => {
+  const pdfs = files.filter(f =>
+    f.name.toLowerCase().endsWith(".pdf")
+  );
+  const library = document.getElementById("policyLibrary");
+  library.innerHTML = pdfs.map(f => `
+    <p>
+      📄 <a href="${f.download_url}" target="_blank"
+      rel="noopener noreferrer">${f.name}</a>
+    </p>
+  `).join("");
+})
+.catch(() => {
+  document.getElementById("policyLibrary").textContent =
+    "Unable to load policies.";
+});
+</script>
     <p id="policyMessage"></p>
   </section>
 
