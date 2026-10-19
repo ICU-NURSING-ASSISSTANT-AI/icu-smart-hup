@@ -299,11 +299,20 @@ function normalizeSearchText(value) {
     .replace(/\s+/g, ' ').trim();
 }
 async function getPolicyFiles() {
-  const response = await fetch('https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/contents/', {cache:'no-store'});
-  if (!response.ok) throw new Error('Could not read the policy file list (GitHub API).');
-  const items = await response.json();
-  if (!Array.isArray(items)) throw new Error('Unexpected GitHub file list.');
-  return items.filter(f => f.type === 'file' && /\.pdf$/i.test(f.name));
+  const names = [
+    "DPP-ICU-0001(v7) Admission Criteria.pdf",
+    "DPP-ICU-0002(v6) Discharge Criteria.pdf",
+    "DPP-ICU-0007(v5) Recognizing Critical ECG Changes.pdf",
+    "DPP-ICU-0008(v6) Central Venous Access Device Management.pdf",
+    "DPP-ICU-0009(v1) Chest Tube Insertion, Care and Removal.pdf",
+    "DPP-ICU-0011(V5) Neurological Assessment.pdf",
+    "DPP-ICU-0012(V5) Transfer of Patient from ICU to Ward.pdf",
+    "DPP-ICU-0013(v6) External Jugular Vein Cannulation.pdf",
+    "DPP-ICU-0015(v6) CVAD Medication Administration.pdf",
+    "DPP-NR-0001 (v6) Standard of Professional Nursing Practice.pdf",
+    "MPP-MM-0015(V6) MEDICATION ADMINISTRATION.pdf"
+  ];
+  return names.map(name => ({ name, type: "file" }));
 }
 async function readPolicy(pdfjs, file) {
   if (extractedPolicies.has(file.name)) return extractedPolicies.get(file.name);
