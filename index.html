@@ -268,7 +268,7 @@ const policyUnits = { ICU:'policies/ICU', NICU:'policies/NICU', PICU:'policies/P
 let activePolicyUnit = 'ICU';
 const policyFilesByUnit = new Map();
 function githubRepositoryInfo() {
-  const owner = location.hostname.split('.')[0];
+const owner = 'ICU-NURSING-ASSISTANT-AI';
   const repo = location.pathname.split('/').filter(Boolean)[0] || 'icu-smart-hub';
   return {owner,repo};
 }
