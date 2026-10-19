@@ -93,6 +93,21 @@ footer {
   color: #60758a;
   font-size: 13px;
 }
+
+/* Educational video library */
+.video-tools { display:grid; grid-template-columns: 1fr 220px; gap:12px; margin:18px 0; }
+.video-tools input, .video-tools select { max-width:none; margin:0; }
+.video-count { color:#60758a; font-size:14px; margin:10px 0; }
+.video-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; }
+.video-card { border:1px solid #dce7f0; border-radius:12px; overflow:hidden; background:#f9fcff; }
+.video-card-content { padding:15px; }
+.video-card h3 { margin:6px 0 8px; color:var(--navy); }
+.video-card p { margin:6px 0; line-height:1.5; }
+.video-category { display:inline-block; background:#e7f2fb; color:#153b5b; border-radius:20px; padding:5px 10px; font-size:12px; font-weight:bold; }
+.video-frame { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; background:#e6eef5; }
+.video-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.video-empty { padding:18px; border:1px dashed #bdccda; border-radius:10px; }
+@media (max-width:600px) { .video-tools { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -220,24 +235,19 @@ fetch("https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/cont
     <div id="topicResult" aria-live="polite"></div>
     <div class="notice">Results are excerpts for locating source documents, not clinical guidance. Verify the current approved version and full context. Do not enter patient information. Publicly hosted PDFs may be accessible to anyone with the URL.</div>
   </section>
-<section class="panel" id="videos">
-  <h2>🎥 Educational Videos</h2>
-  <h3>Endotracheal Intubation</h3>
-  <p>Step-by-Step Educational Animation</p>
-
-  <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
-    <iframe
-      src="https://www.youtube-nocookie.com/embed/zMMjI86QJNA"
-      title="Endotracheal Intubation Educational Video"
-      style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-      allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture"
-      allowfullscreen>
-    </iframe>
-  </div>
-
-  <p>Educational content only. Follow approved clinical policies and procedures.</p>
-  <p>Video source: YouTube – E-Pulsepoints</p>
-</section>
+  <section class="panel" id="videos">
+    <h2>🎥 Educational Video Library</h2>
+    <p>Browse ICU educational videos by topic, or search for a specific skill.</p>
+    <div class="video-tools">
+      <input id="videoSearch" type="search" placeholder="Search videos..." aria-label="Search educational videos">
+      <select id="videoCategory" aria-label="Filter video category">
+        <option value="">All Categories</option>
+      </select>
+    </div>
+    <p id="videoStatus" class="video-count" role="status" aria-live="polite">Loading videos...</p>
+    <div id="videoLibrary" class="video-grid"></div>
+    <div class="notice">Educational content only. Follow approved clinical policies and procedures. External videos are not automatically endorsed or clinically validated.</div>
+  </section>
 </main>
 
 <footer>
@@ -412,6 +422,95 @@ async function searchTopic() {
   } catch (error) { progress.textContent = 'Search unavailable: ' + error.message; }
   finally { button.disabled = false; }
 }
+
+
+// Educational Video Library: add entries to videos.json, not to this HTML file.
+let educationalVideos = [];
+function youtubeVideoId(link) {
+  try {
+    const url = new URL(link);
+    const host = url.hostname.toLowerCase();
+    let id = '';
+    if (host === 'youtu.be' || host === 'www.youtu.be') id = url.pathname.slice(1).split('/')[0];
+    else if (['youtube.com','www.youtube.com','m.youtube.com','www.youtube-nocookie.com','youtube-nocookie.com'].includes(host)) {
+      if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+      else if (/^\/(embed|shorts|live)\//.test(url.pathname)) id = url.pathname.split('/')[2] || '';
+    }
+    return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch { return null; }
+}
+function renderVideoLibrary() {
+  const library = document.getElementById('videoLibrary');
+  const status = document.getElementById('videoStatus');
+  const query = document.getElementById('videoSearch').value.trim().toLocaleLowerCase();
+  const category = document.getElementById('videoCategory').value;
+  library.replaceChildren();
+  const matches = educationalVideos.filter(video =>
+    (!category || video.category === category) &&
+    [video.title, video.category, video.description].join(' ').toLocaleLowerCase().includes(query)
+  );
+  status.textContent = matches.length + ' video(s) found';
+  if (!matches.length) {
+    const empty = document.createElement('p');
+    empty.className = 'video-empty';
+    empty.textContent = 'No videos match your search. Try another topic.';
+    library.append(empty);
+    return;
+  }
+  for (const video of matches) {
+    const card = document.createElement('article');
+    card.className = 'video-card';
+    const frame = document.createElement('div');
+    frame.className = 'video-frame';
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube-nocookie.com/embed/' + youtubeVideoId(video.url);
+    iframe.title = video.title;
+    iframe.loading = 'lazy';
+    iframe.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    frame.append(iframe);
+    const content = document.createElement('div');
+    content.className = 'video-card-content';
+    const categoryLabel = document.createElement('span');
+    categoryLabel.className = 'video-category';
+    categoryLabel.textContent = video.category;
+    const title = document.createElement('h3');
+    title.textContent = video.title;
+    const description = document.createElement('p');
+    description.textContent = video.description || '';
+    const source = document.createElement('p');
+    source.style.fontSize = '12px';
+    source.style.color = '#60758a';
+    source.textContent = 'Source: ' + (video.source || 'YouTube');
+    content.append(categoryLabel, title, description, source);
+    card.append(frame, content);
+    library.append(card);
+  }
+}
+async function loadEducationalVideos() {
+  const status = document.getElementById('videoStatus');
+  try {
+    const response = await fetch('./videos.json', {cache:'no-store'});
+    if (!response.ok) throw new Error('videos.json could not be loaded (HTTP ' + response.status + ')');
+    const data = await response.json();
+    if (!Array.isArray(data)) throw new Error('videos.json must contain a list of videos');
+    educationalVideos = data.filter(video => video && typeof video.title === 'string' &&
+      typeof video.category === 'string' && typeof video.url === 'string' && youtubeVideoId(video.url));
+    const select = document.getElementById('videoCategory');
+    [...new Set(educationalVideos.map(v => v.category))].sort().forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      select.append(option);
+    });
+    renderVideoLibrary();
+  } catch (error) {
+    status.textContent = 'Unable to load video library. Check that videos.json is uploaded next to index.html. ' + error.message;
+  }
+}
+document.getElementById('videoSearch').addEventListener('input', renderVideoLibrary);
+document.getElementById('videoCategory').addEventListener('change', renderVideoLibrary);
+loadEducationalVideos();
 
 </script>
 
