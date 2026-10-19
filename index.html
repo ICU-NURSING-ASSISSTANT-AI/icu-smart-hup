@@ -361,6 +361,7 @@ async function searchTopic() {
     progress.textContent = 'Loading document list…';
     const files = await getPolicyFiles();
     if (!files.length) { progress.textContent = 'No PDF files found in the repository root.'; return; }
+    progress.textContent = 'Loading PDF reader...';
     const pdfjs = await loadPdfEngine();
     let matched = 0, failed = 0, scanned = 0;
     for (const file of files) {
