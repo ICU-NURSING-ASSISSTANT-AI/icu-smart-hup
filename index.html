@@ -205,17 +205,14 @@ fetch("https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/cont
   </section>
 
   <section class="panel" id="assistant">
-    <h2>Smart Assistant — Demo Search</h2>
-    <p>This prototype searches example topics only. It is not connected
-      to an AI service or an approved policy library.</p>
-    <input id="topic" placeholder="e.g. drug calculation, infection prevention">
-    <br>
-    <button onclick="searchTopic()">Search Topics</button>
-    <p id="topicResult" aria-live="polite"></p>
-    <div class="notice">
-      Do not enter patient-identifiable information or confidential data.
-      This search does not provide clinical advice.
-    </div>
+    <h2>🔎 ICU Smart Policy Search</h2>
+    <p>Free document search: find matching words in available ICU policy PDFs. This is not generative AI and does not give clinical recommendations.</p>
+    <label for="topic">Search in English or Arabic</label><br>
+    <input id="topic" placeholder="e.g. admission, central venous access" onkeydown="if(event.key==='Enter') searchTopic()">
+    <br><button id="searchButton" onclick="searchTopic()">Search policy documents</button>
+    <p id="searchProgress" role="status" aria-live="polite"></p>
+    <div id="topicResult" aria-live="polite"></div>
+    <div class="notice">Results are excerpts for locating source documents, not clinical guidance. Verify the current approved version and full context. Do not enter patient information. Publicly hosted PDFs may be accessible to anyone with the URL.</div>
   </section>
 </main>
 
@@ -273,26 +270,115 @@ function calculateVolume() {
     ' mL. This is not a clinical recommendation.';
 }
 
-function searchTopic() {
-  const topic = document.getElementById('topic').value.trim().toLowerCase();
-  const result = document.getElementById('topicResult');
-
-  if (!topic) {
-    result.textContent = 'Enter a topic to search.';
-  } else if (topic.includes('drug') || topic.includes('medication')) {
-    result.textContent =
-      'Medication safety resource requested. Consult the approved policy.';
-  } else if (topic.includes('infection') || topic.includes('hand hygiene')) {
-    result.textContent =
-      'Infection prevention resource requested. Consult the approved policy.';
-  } else if (topic.includes('calculation')) {
-    result.textContent =
-      'Open Clinical Calculators for the educational demonstration.';
-  } else {
-    result.textContent =
-      'No connected AI or approved document search is available yet.';
-  }
+// Browser-only PDF text search. The PDF.js library is loaded from a public CDN.
+// No API keys or patient data are sent to an AI service.
+const PDFJS_VERSION = '3.11.174';
+const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
+const PDFJS_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+let pdfEnginePromise;
+const extractedPolicies = new Map();
+function loadPdfEngine() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (!pdfEnginePromise) pdfEnginePromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = PDFJS_CDN;
+    script.onload = () => {
+      if (!window.pdfjsLib) { reject(new Error('PDF library unavailable')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => reject(new Error('PDF library failed to load. Check internet connection.'));
+    document.head.appendChild(script);
+  }).catch(error => { pdfEnginePromise = null; throw error; });
+  return pdfEnginePromise;
 }
+function normalizeSearchText(value) {
+  return String(value).toLocaleLowerCase().normalize('NFKC')
+    .replace(/[\u064b-\u065f\u0670]/g, '')
+    .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ـ/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+async function getPolicyFiles() {
+  const response = await fetch('https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/contents/', {cache:'no-store'});
+  if (!response.ok) throw new Error('Could not read the policy file list (GitHub API).');
+  const items = await response.json();
+  if (!Array.isArray(items)) throw new Error('Unexpected GitHub file list.');
+  return items.filter(f => f.type === 'file' && /\.pdf$/i.test(f.name));
+}
+async function readPolicy(pdfjs, file) {
+  if (extractedPolicies.has(file.name)) return extractedPolicies.get(file.name);
+  // Same-origin URL on GitHub Pages avoids cross-origin PDF download problems.
+  const url = './' + encodeURIComponent(file.name);
+  const document = await pdfjs.getDocument({url}).promise;
+  const pages = [];
+  try {
+    for (let n = 1; n <= document.numPages; n++) {
+      const page = await document.getPage(n);
+      const content = await page.getTextContent();
+      const text = content.items.map(item => item.str || '').join(' ');
+      pages.push({page:n, text, normalized:normalizeSearchText(text)});
+    }
+  } finally { await document.destroy(); }
+  extractedPolicies.set(file.name, pages);
+  return pages;
+}
+function makeResult(file, page, query) {
+  const section = document.createElement('article');
+  section.style.cssText = 'padding:14px;margin:10px 0;border:1px solid #dce7f0;border-radius:10px;background:#f8fbfe';
+  const link = document.createElement('a');
+  link.href = './' + encodeURIComponent(file.name) + '#page=' + page.page;
+  link.target = '_blank'; link.rel = 'noopener noreferrer';
+  link.textContent = file.name + ' — page ' + page.page;
+  link.style.fontWeight = 'bold';
+  const excerpt = document.createElement('p');
+  const words = query.split(' ').filter(Boolean);
+  let index = page.normalized.indexOf(query);
+  if (index < 0) index = page.normalized.indexOf(words[0]);
+  // Normalized text can differ in length from the original. Show a bounded plain-text excerpt.
+  excerpt.textContent = page.text.length <= 450 ? page.text : page.text.slice(Math.max(0, index - 100), Math.max(0, index - 100) + 350) + '…';
+  section.append(link, excerpt);
+  return section;
+}
+async function searchTopic() {
+  const raw = document.getElementById('topic').value.trim();
+  const query = normalizeSearchText(raw);
+  const result = document.getElementById('topicResult');
+  const progress = document.getElementById('searchProgress');
+  const button = document.getElementById('searchButton');
+  result.replaceChildren();
+  if (query.length < 2) { progress.textContent = 'Enter at least two characters.'; return; }
+  button.disabled = true;
+  try {
+    progress.textContent = 'Loading document list…';
+    const files = await getPolicyFiles();
+    if (!files.length) { progress.textContent = 'No PDF files found in the repository root.'; return; }
+    const pdfjs = await loadPdfEngine();
+    let matched = 0, failed = 0, scanned = 0;
+    for (const file of files) {
+      scanned++;
+      progress.textContent = `Searching document ${scanned} of ${files.length}…`;
+      // Yield to browser rendering so the progress message remains visible.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      try {
+        const pages = await readPolicy(pdfjs, file);
+        for (const page of pages) {
+          if (page.normalized.includes(query) || query.split(' ').every(w => page.normalized.includes(w))) {
+            result.appendChild(makeResult(file, page, query));
+            matched++;
+          }
+        }
+      } catch (error) { failed++; console.warn('PDF could not be searched:', file.name, error); }
+    }
+    progress.textContent = `${matched} matching page(s) across ${files.length - failed} searched PDF(s).` + (failed ? ` ${failed} PDF(s) could not be read.` : '');
+    if (!matched) {
+      const note = document.createElement('p');
+      note.textContent = 'No matching searchable text found. Scanned-image PDFs may require OCR, which is not included.';
+      result.appendChild(note);
+    }
+  } catch (error) { progress.textContent = 'Search unavailable: ' + error.message; }
+  finally { button.disabled = false; }
+}
+
 </script>
 </body>
 </html>
