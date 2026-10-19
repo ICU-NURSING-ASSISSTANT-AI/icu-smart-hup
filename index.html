@@ -108,6 +108,17 @@ footer {
 .video-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .video-empty { padding:18px; border:1px dashed #bdccda; border-radius:10px; }
 @media (max-width:600px) { .video-tools { grid-template-columns:1fr; } }
+
+/* Policies organized by clinical unit */
+.policy-units {display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:18px 0}
+.policy-unit {text-align:left;background:#f1f7fc;color:#153b5b;border:1px solid #c8ddea;padding:18px;border-radius:12px}
+.policy-unit:hover,.policy-unit.active {background:#2476a8;color:#fff}
+.policy-unit strong {display:block;font-size:20px;margin-bottom:5px}
+.policy-unit small {display:block;font-size:12px;font-weight:normal}
+.policy-list {list-style:none;padding:0;margin:10px 0}
+.policy-list li {padding:12px 0;border-bottom:1px solid #e2eaf1;overflow-wrap:anywhere}
+.policy-list a {color:#17628e}
+.policy-status {color:#60758a;font-size:14px}
 </style>
 </head>
 <body>
@@ -162,34 +173,20 @@ footer {
   </section>
 
   <section class="panel" id="policies">
-    <h2>Policies & Procedures</h2>
-    <p>Approved ICU policies will be listed here.</p>
-    <input id="policySearch" placeholder="Search policy title..."
-      oninput="searchPolicy()">
-  
-    <ul id="policyResults"></ul>
-<div id="policyLibrary"></div>
-<script>
-fetch("https://api.github.com/repos/ICU-NURSING-ASSISSTANT-AI/icu-smart-hup/contents/")
-.then(r => r.json())
-.then(files => {
-  const pdfs = files.filter(f =>
-    f.name.toLowerCase().endsWith(".pdf")
-  );
-  const library = document.getElementById("policyLibrary");
-  library.innerHTML = pdfs.map(f => `
-    <p>
-     <a href="./${encodeURIComponent(f.name)}" target="_blank"
-      rel="noopener noreferrer">${f.name}</a>
-    </p>
-  `).join("");
-})
-.catch(() => {
-  document.getElementById("policyLibrary").textContent =
-    "Unable to load policies.";
-});
-</script>
-    <p id="policyMessage"></p>
+    <h2>📚 Policies &amp; Procedures</h2>
+    <p>Select your clinical unit to browse its policy documents.</p>
+    <div class="policy-units" role="group" aria-label="Clinical units">
+      <button class="policy-unit active" data-unit="ICU" onclick="selectPolicyUnit('ICU')"><strong>ICU</strong><small>Adult Intensive Care</small></button>
+      <button class="policy-unit" data-unit="NICU" onclick="selectPolicyUnit('NICU')"><strong>NICU</strong><small>Neonatal Intensive Care</small></button>
+      <button class="policy-unit" data-unit="PICU" onclick="selectPolicyUnit('PICU')"><strong>PICU</strong><small>Pediatric Intensive Care</small></button>
+      <button class="policy-unit" data-unit="Existing" onclick="selectPolicyUnit('Existing')"><strong>Existing Files</strong><small>Unsorted PDFs already uploaded</small></button>
+    </div>
+    <h3 id="policyUnitHeading">ICU Policies</h3>
+    <label for="policySearch">Search policy title</label>
+    <input id="policySearch" type="search" placeholder="Search policy title..." oninput="renderPolicyFiles()">
+    <p id="policyMessage" class="policy-status" role="status" aria-live="polite">Loading policies...</p>
+    <ul id="policyLibrary" class="policy-list"></ul>
+    <div class="notice">For clinical reference only. Verify each document's current approval, version and applicability before use. Public repository PDFs are publicly accessible.</div>
   </section>
 
   <section class="panel" id="kpis">
@@ -262,28 +259,73 @@ function showPanel(id) {
   );
   document.getElementById(id).style.display = 'block';
   document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+  if (id === 'policies') selectPolicyUnit(activePolicyUnit);
 }
 
-const policyExamples = [
-  'Infection Prevention and Control',
-  'Medication Safety',
-  'Patient Identification',
-  'Hand Hygiene',
-  'Clinical Documentation'
-];
-
-function searchPolicy() {
-  const query = document.getElementById('policySearch')
-    .value.trim().toLowerCase();
-  const results = policyExamples.filter(item =>
-    item.toLowerCase().includes(query)
-  );
-  document.getElementById('policyResults').innerHTML =
-    results.length
-      ? results.map(item => '<li>' + item + '</li>').join('')
-      : '<li>No matching demo topic found.</li>';
-  document.getElementById('policyMessage').textContent =
-    'These are example titles, not verified cluster policies.';
+// Policies are listed automatically from policies/ICU, policies/NICU, policies/PICU.
+// Existing root PDFs stay accessible in the Existing Files tab until organized.
+const policyUnits = { ICU:'policies/ICU', NICU:'policies/NICU', PICU:'policies/PICU', Existing:'' };
+let activePolicyUnit = 'ICU';
+const policyFilesByUnit = new Map();
+function githubRepositoryInfo() {
+  const owner = location.hostname.split('.')[0];
+  const repo = location.pathname.split('/').filter(Boolean)[0] || 'icu-smart-hub';
+  return {owner,repo};
+}
+async function listPolicyFiles(unit) {
+  if (policyFilesByUnit.has(unit)) return policyFilesByUnit.get(unit);
+  const {owner,repo} = githubRepositoryInfo();
+  const folder = policyUnits[unit];
+  const apiPath = folder ? '/' + folder.split('/').map(encodeURIComponent).join('/') : '';
+  const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents${apiPath}?ref=main`;
+  const response = await fetch(url, {cache:'no-store'});
+  if (response.status === 404 && folder) {policyFilesByUnit.set(unit, []);return [];}
+  if (!response.ok) throw new Error('Could not load policy folder (HTTP ' + response.status + ')');
+  const entries = await response.json();
+  if (!Array.isArray(entries)) throw new Error('Unexpected GitHub response');
+  const files = entries.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.pdf'))
+    .map(f => ({name:f.name,path:f.path,type:'file'}));
+  policyFilesByUnit.set(unit, files);
+  return files;
+}
+function policyUrl(file) {
+  return './' + file.path.split('/').map(encodeURIComponent).join('/');
+}
+async function selectPolicyUnit(unit) {
+  if (!Object.prototype.hasOwnProperty.call(policyUnits,unit)) return;
+  activePolicyUnit = unit;
+  document.querySelectorAll('.policy-unit').forEach(button => {
+    const selected = button.dataset.unit === unit;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  document.getElementById('policyUnitHeading').textContent = unit === 'Existing' ? 'Existing Unsorted Policies' : unit + ' Policies';
+  document.getElementById('policySearch').value = '';
+  await renderPolicyFiles();
+}
+async function renderPolicyFiles() {
+  const unit = activePolicyUnit;
+  const list = document.getElementById('policyLibrary');
+  const message = document.getElementById('policyMessage');
+  const query = document.getElementById('policySearch').value.trim().toLocaleLowerCase();
+  list.replaceChildren();
+  message.textContent = 'Loading ' + unit + ' policies...';
+  try {
+    const files = await listPolicyFiles(unit);
+    if (activePolicyUnit !== unit) return;
+    const matches = files.filter(f => f.name.toLocaleLowerCase().includes(query));
+    message.textContent = matches.length + ' policy file(s) found' + (!files.length ? '. This folder is empty or not created yet.' : '');
+    for (const file of matches) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = policyUrl(file);
+      a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = '📄 ' + file.name;
+      li.append(a);list.append(li);
+    }
+  } catch(error) {
+    if (activePolicyUnit === unit) message.textContent = 'Unable to load policies: ' + error.message;
+  }
 }
 
 function calculateVolume() {
@@ -333,25 +375,15 @@ function normalizeSearchText(value) {
     .replace(/\s+/g, ' ').trim();
 }
 async function getPolicyFiles() {
-  const names = [
-    "DPP-ICU-0001(v7) Admission Criteria.pdf",
-    "DPP-ICU-0002(v6) Discharge Criteria.pdf",
-    "DPP-ICU-0007(v5) Recognizing Critical ECG Changes.pdf",
-    "DPP-ICU-0008(v6) Central Venous Access Device Management.pdf",
-    "DPP-ICU-0009(v1) Chest Tube Insertion, Care and Removal.pdf",
-    "DPP-ICU-0011(V5) Neurological Assessment.pdf",
-    "DPP-ICU-0012(V5) Transfer of Patient from ICU to Ward.pdf",
-    "DPP-ICU-0013(v6) External Jugular Vein Cannulation.pdf",
-    "DPP-ICU-0015(v6) CVAD Medication Administration.pdf",
-    "DPP-NR-0001 (v6) Standard of Professional Nursing Practice.pdf",
-    "MPP-MM-0015(V6) MEDICATION ADMINISTRATION.pdf"
-  ];
-  return names.map(name => ({ name, type: "file" }));
+  const groups = await Promise.allSettled(Object.keys(policyUnits).map(unit => listPolicyFiles(unit)));
+  const files = groups.filter(r => r.status === 'fulfilled').flatMap(r => r.value);
+  if (!files.length && groups.some(r => r.status === 'rejected')) throw new Error('Policy list unavailable');
+  return files;
 }
 async function readPolicy(pdfjs, file) {
-  if (extractedPolicies.has(file.name)) return extractedPolicies.get(file.name);
+  if (extractedPolicies.has(file.path)) return extractedPolicies.get(file.path);
   // Same-origin URL on GitHub Pages avoids cross-origin PDF download problems.
-  const url = './' + encodeURIComponent(file.name);
+  const url = policyUrl(file);
   const document = await pdfjs.getDocument({url}).promise;
   const pages = [];
   try {
@@ -362,14 +394,14 @@ async function readPolicy(pdfjs, file) {
       pages.push({page:n, text, normalized:normalizeSearchText(text)});
     }
   } finally { await document.destroy(); }
-  extractedPolicies.set(file.name, pages);
+  extractedPolicies.set(file.path, pages);
   return pages;
 }
 function makeResult(file, page, query) {
   const section = document.createElement('article');
   section.style.cssText = 'padding:14px;margin:10px 0;border:1px solid #dce7f0;border-radius:10px;background:#f8fbfe';
   const link = document.createElement('a');
-  link.href = './' + encodeURIComponent(file.name) + '#page=' + page.page;
+  link.href = policyUrl(file) + '#page=' + page.page;
   link.target = '_blank'; link.rel = 'noopener noreferrer';
   link.textContent = file.name + ' — page ' + page.page;
   link.style.fontWeight = 'bold';
@@ -511,6 +543,7 @@ async function loadEducationalVideos() {
 document.getElementById('videoSearch').addEventListener('input', renderVideoLibrary);
 document.getElementById('videoCategory').addEventListener('change', renderVideoLibrary);
 loadEducationalVideos();
+// Policy folders are fetched when Open Policies is selected.
 
 </script>
 
