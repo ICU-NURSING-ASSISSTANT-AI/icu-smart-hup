@@ -181,6 +181,14 @@ footer {
       <button class="policy-unit" data-unit="PICU" onclick="selectPolicyUnit('PICU')"><strong>PICU</strong><small>Pediatric Intensive Care</small></button>
      
     </div>
+    <div id="hospitalSelector">
+  <label for="hospitalSelect">Select Hospital:</label>
+  <select id="hospitalSelect" onchange="selectHospital(this.value)">
+    <option value="King-Fahad-Hospital">King Fahad Hospital</option>
+    <option value="Prince-Mishari-Hospital">Prince Mishari Hospital</option>
+    <option value="Al-Mikhwah-Hospital">Al Mikhwah Hospital</option>
+  </select>
+</div>
     <h3 id="policyUnitHeading">ICU Policies</h3>
     <label for="policySearch">Search policy title</label>
     <input id="policySearch" type="search" placeholder="Search policy title..." oninput="renderPolicyFiles()">
@@ -263,8 +271,20 @@ function showPanel(id) {
 }
 
 // Policies are listed automatically from policies/ICU, policies/NICU, policies/PICU.
-// Existing root PDFs stay accessible in the Existing Files tab until organized.
-const policyUnits = { ICU:'ICU', NICU:'policies/NICU', PICU:'policies/PICU', Existing:'' };
+const policyUnits = {
+ ICU: 'policies/ICU',
+  NICU: 'policies/NICU',
+  PICU: 'policies/PICU'
+};
+
+
+let activeHospital = 'King-Fahad-Hospital';
+
+function selectHospital(hospital) {
+  activeHospital = hospital;
+  policyFilesByUnit.clear();
+  renderPolicyFiles();
+}
 let activePolicyUnit = 'ICU';
 const policyFilesByUnit = new Map();
 function githubRepositoryInfo() {
@@ -275,7 +295,7 @@ const repo = location.pathname.split('/').filter(Boolean)[0] || 'icu-smart-hup';
 async function listPolicyFiles(unit) {
   if (policyFilesByUnit.has(unit)) return policyFilesByUnit.get(unit);
   const {owner,repo} = githubRepositoryInfo();
-  const folder = policyUnits[unit];
+const folder = policyUnits[unit] + '/' + activeHospital;
   const apiPath = folder ? '/' + folder.split('/').map(encodeURIComponent).join('/') : '';
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents${apiPath}?ref=main`;
   const response = await fetch(url, {cache:'no-store'});
