@@ -662,6 +662,25 @@ loadEducationalVideos();
 document.getElementById("submitNursingQuestion")
   .addEventListener("click", submitNursingQuestion);
 </script>
+<section id="reviewerPanel" style="padding:20px; margin:20px 0; border:1px solid #ddd; border-radius:12px;">
+  <h2>Nurse Reviewer Dashboard</h2>
+  <p>Authorized nursing reviewers only</p>
 
+  <input id="reviewerEmail"
+         type="email"
+         placeholder="Reviewer Email"
+         autocomplete="username">
+
+  <input id="reviewerPassword"
+         type="password"
+         placeholder="Password"
+         autocomplete="current-password">
+
+  <button type="button" id="reviewerLogin">
+    Login
+  </button>
+
+  <p id="reviewerStatus" role="status"></p>
+</section>
 </body>
 </html>
