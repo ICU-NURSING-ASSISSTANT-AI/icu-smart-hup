@@ -820,6 +820,171 @@ card.appendChild(answerBox);
     panel.appendChild(message);
   }
 }
+<script>
+// ICU Smart Hub: reviewer login, answer approval, and public approved Q&A.
+// Requires SUPABASE_URL and SUPABASE_KEY defined in the earlier script.
+const reviewerPanel = document.getElementById('reviewerPanel');
+const pendingPanel = document.createElement('div');
+pendingPanel.id = 'reviewerQuestionsPanel';
+pendingPanel.hidden = true;
+reviewerPanel.appendChild(pendingPanel);
+let reviewerToken = null;
+
+async function supabaseRequest(path, token, options = {}) {
+  const headers = {
+    apikey: SUPABASE_KEY,
+    ...(token ? {Authorization: `Bearer ${token}`} : {}),
+    ...(options.body ? {'Content-Type': 'application/json'} : {}),
+    ...(options.headers || {})
+  };
+  const response = await fetch(`${SUPABASE_URL}${path}`, {...options, headers});
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Request failed (HTTP ${response.status})${detail ? ': ' + detail.slice(0, 180) : ''}`);
+  }
+  if (response.status === 204 || options.headers?.Prefer === 'return=minimal') return null;
+  return response.json();
+}
+
+async function loadApprovedNursingAnswers() {
+  const container = document.getElementById('approvedNursingAnswers');
+  container.textContent = 'Loading approved questions...';
+  try {
+    const questions = await supabaseRequest(
+      '/rest/v1/nursing_questions?select=question,answer,answered_at&is_approved=eq.true&order=answered_at.desc',
+      null
+    );
+    container.replaceChildren();
+    if (!questions.length) {
+      container.textContent = 'No approved questions yet.';
+      return;
+    }
+    for (const item of questions) {
+      const card = document.createElement('article');
+      card.style.cssText = 'border:1px solid #dce7f0;border-radius:10px;padding:14px;margin:12px 0;background:#f8fbfe';
+      const question = document.createElement('h4');
+      question.textContent = 'Q: ' + item.question;
+      const answer = document.createElement('p');
+      answer.textContent = 'A: ' + (item.answer || '');
+      answer.style.whiteSpace = 'pre-wrap';
+      card.append(question, answer);
+      container.appendChild(card);
+    }
+  } catch (error) {
+    container.textContent = 'Unable to load approved answers: ' + error.message;
+  }
+}
+
+async function loadReviewerQuestions(token) {
+  pendingPanel.replaceChildren();
+  const title = document.createElement('h3');
+  title.textContent = 'Pending Nursing Questions';
+  pendingPanel.appendChild(title);
+  const progress = document.createElement('p');
+  progress.textContent = 'Loading pending questions...';
+  pendingPanel.appendChild(progress);
+  try {
+    const questions = await supabaseRequest(
+      '/rest/v1/nursing_questions?select=id,question,answer,created_at&is_approved=eq.false&order=created_at.desc',
+      token
+    );
+    progress.remove();
+    if (!questions.length) {
+      const empty = document.createElement('p');
+      empty.textContent = 'No pending questions.';
+      pendingPanel.appendChild(empty);
+      return;
+    }
+    for (const item of questions) {
+      const card = document.createElement('article');
+      card.style.cssText = 'border:1px solid #dce7f0;border-radius:10px;padding:14px;margin:12px 0;background:#f8fbfe';
+      const question = document.createElement('p');
+      question.textContent = item.question;
+      question.style.fontWeight = 'bold';
+      const label = document.createElement('label');
+      label.textContent = 'Nursing answer';
+      const answer = document.createElement('textarea');
+      answer.rows = 4;
+      answer.maxLength = 5000;
+      answer.placeholder = 'Write your nursing answer here...';
+      answer.value = item.answer || '';
+      answer.style.cssText = 'display:block;width:100%;padding:12px;margin:8px 0 12px;border:1px solid #bdccda;border-radius:8px';
+      const approve = document.createElement('button');
+      approve.type = 'button';
+      approve.textContent = 'Approve & Publish';
+      const status = document.createElement('p');
+      status.setAttribute('role', 'status');
+      approve.addEventListener('click', async () => {
+        const text = answer.value.trim();
+        if (text.length < 10) {
+          status.textContent = 'Please write an answer of at least 10 characters.';
+          return;
+        }
+        if (!window.confirm('Publish this question and answer for all visitors?')) return;
+        approve.disabled = true;
+        status.textContent = 'Publishing...';
+        try {
+          await supabaseRequest(
+            `/rest/v1/nursing_questions?id=eq.${encodeURIComponent(item.id)}&is_approved=eq.false`,
+            reviewerToken,
+            {
+              method: 'PATCH',
+              headers: {Prefer: 'return=minimal'},
+              body: JSON.stringify({answer: text, is_approved: true, answered_at: new Date().toISOString()})
+            }
+          );
+          status.textContent = 'Published successfully.';
+          await Promise.all([loadReviewerQuestions(reviewerToken), loadApprovedNursingAnswers()]);
+        } catch (error) {
+          status.textContent = 'Publish failed: ' + error.message;
+          approve.disabled = false;
+        }
+      });
+      card.append(question, label, answer, approve, status);
+      pendingPanel.appendChild(card);
+    }
+  } catch (error) {
+    progress.textContent = 'Unable to load pending questions: ' + error.message;
+  }
+}
+
+document.getElementById('reviewerLogin').addEventListener('click', async () => {
+  const email = document.getElementById('reviewerEmail').value.trim();
+  const password = document.getElementById('reviewerPassword').value;
+  const status = document.getElementById('reviewerStatus');
+  const button = document.getElementById('reviewerLogin');
+  if (!email || !password) {
+    status.textContent = 'Please enter email and password.';
+    return;
+  }
+  button.disabled = true;
+  status.textContent = 'Signing in...';
+  pendingPanel.hidden = true;
+  reviewerToken = null;
+  try {
+    const auth = await supabaseRequest('/auth/v1/token?grant_type=password', null, {
+      method: 'POST',
+      body: JSON.stringify({email, password})
+    });
+    if (!auth.access_token || !auth.user?.id) throw new Error('Invalid login response.');
+    const reviewers = await supabaseRequest('/rest/v1/nursing_reviewers?select=user_id', auth.access_token);
+    if (!reviewers.some(r => r.user_id === auth.user.id)) {
+      throw new Error('This account is not authorized as a reviewer.');
+    }
+    reviewerToken = auth.access_token;
+    document.getElementById('reviewerPassword').value = '';
+    status.textContent = 'Reviewer login successful.';
+    pendingPanel.hidden = false;
+    await loadReviewerQuestions(reviewerToken);
+  } catch (error) {
+    status.textContent = 'Login failed: ' + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+loadApprovedNursingAnswers();
 </script>
 </body>
 </html>
+
