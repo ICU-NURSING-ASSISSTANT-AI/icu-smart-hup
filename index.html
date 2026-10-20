@@ -973,6 +973,59 @@ document.getElementById('reviewerLogin').addEventListener('click', async () => {
 
 loadApprovedNursingAnswers();
 </script>
+  <script>
+async function showApprovedNursingAnswers() {
+  const container = document.getElementById("approvedNursingAnswers");
+  if (!container) return;
+
+  container.textContent = "Loading approved answers...";
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/nursing_questions?select=question,answer&is_approved=eq.true&order=created_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to load approved answers.");
+    }
+
+    const questions = await response.json();
+    container.replaceChildren();
+
+    if (questions.length === 0) {
+      container.textContent = "No approved questions yet.";
+      return;
+    }
+
+    questions.forEach(item => {
+      const card = document.createElement("div");
+      card.style.padding = "15px";
+      card.style.margin = "12px 0";
+      card.style.border = "1px solid #ddd";
+      card.style.borderRadius = "10px";
+
+      const question = document.createElement("h4");
+      question.textContent = item.question;
+
+      const answer = document.createElement("p");
+      answer.textContent = item.answer || "";
+
+      card.appendChild(question);
+      card.appendChild(answer);
+      container.appendChild(card);
+    });
+  } catch (error) {
+    container.textContent = error.message;
+  }
+}
+
+showApprovedNursingAnswers();
+</script>
 </body>
 </html>
 
