@@ -611,6 +611,56 @@ document.getElementById('videoCategory').addEventListener('change', renderVideoL
 loadEducationalVideos();
 // Policy folders are fetched when Open Policies is selected.
 
+ const SUPABASE_URL = "https://wvtbfqgjqvzxhrwddchw.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_62oJ0YumOSvNyqX_VGGExA_zRciO96J";
+
+  async function submitNursingQuestion() {
+  const input = document.getElementById("nursingQuestion");
+  const status = document.getElementById("questionStatus");
+  const button = document.getElementById("submitNursingQuestion");
+
+  const question = input.value.trim();
+
+  if (question.length < 10 || question.length > 1000) {
+    status.textContent = "Enter 10 to 1000 characters.";
+    return;
+  }
+
+  button.disabled = true;
+  status.textContent = "Submitting...";
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/nursing_questions`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({ question })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    input.value = "";
+    status.textContent =
+      "Question submitted. Awaiting nurse review.";
+  } catch (error) {
+    status.textContent =
+      "Submission failed. Please try again.";
+    console.error(error);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.getElementById("submitNursingQuestion")
+  .addEventListener("click", submitNursingQuestion);
 </script>
 
 </body>
