@@ -789,7 +789,15 @@ document.getElementById("reviewerPanel")
       card.style.margin = "10px 0";
       card.style.border = "1px solid #ddd";
       card.style.borderRadius = "8px";
-      card.textContent = item.question;
+     card.textContent = item.question;
+
+const answerBox = document.createElement("textarea");
+answerBox.placeholder = "Write your nursing answer here...";
+answerBox.rows = 4;
+answerBox.style.width = "100%";
+answerBox.style.marginTop = "10px";
+
+card.appendChild(answerBox);
       const answerBox = document.createElement("textarea");
 answerBox.placeholder = "Write your nursing answer here...";
 answerBox.rows = 4;
