@@ -805,6 +805,13 @@ answerBox.style.width = "100%";
 answerBox.style.marginTop = "10px";
 
 card.appendChild(answerBox);
+      const answerBox = document.createElement("textarea");
+answerBox.placeholder = "Write your nursing answer here...";
+answerBox.rows = 4;
+answerBox.style.width = "100%";
+answerBox.style.marginTop = "10px";
+
+card.appendChild(answerBox);
       panel.appendChild(card);
     });
   } catch (error) {
