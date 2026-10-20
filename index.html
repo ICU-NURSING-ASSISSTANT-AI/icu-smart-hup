@@ -740,7 +740,16 @@ document.getElementById("reviewerLogin").addEventListener("click", async () => {
     status.textContent = error.message;
   }
 });
-   
+
+   const reviewerQuestionsPanel = document.createElement("div");
+reviewerQuestionsPanel.id = "reviewerQuestionsPanel";
+reviewerQuestionsPanel.hidden = true;
+reviewerQuestionsPanel.innerHTML =
+  "<h3>Pending Nursing Questions</h3>" +
+  "<p>Questions awaiting nurse review will appear here.</p>";
+
+document.getElementById("reviewerPanel")
+  .appendChild(reviewerQuestionsPanel); 
 </script>
 </body>
 </html>
