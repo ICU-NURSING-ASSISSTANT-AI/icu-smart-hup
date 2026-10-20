@@ -735,6 +735,7 @@ document.getElementById("reviewerLogin").addEventListener("click", async () => {
     }
 
     status.textContent = "Reviewer login successful.";
+    document.getElementById("reviewerQuestionsPanel").hidden = false;
 
   } catch (error) {
     status.textContent = error.message;
