@@ -751,6 +751,52 @@ reviewerQuestionsPanel.innerHTML =
 
 document.getElementById("reviewerPanel")
   .appendChild(reviewerQuestionsPanel); 
+    async function loadReviewerQuestions(accessToken) {
+  const panel = document.getElementById("reviewerQuestionsPanel");
+  panel.replaceChildren();
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Pending Nursing Questions";
+  panel.appendChild(heading);
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/nursing_questions?select=id,question,created_at&is_approved=eq.false&order=created_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to load questions.");
+    }
+
+    const questions = await response.json();
+
+    if (questions.length === 0) {
+      const message = document.createElement("p");
+      message.textContent = "No pending questions.";
+      panel.appendChild(message);
+    }
+
+    questions.forEach(item => {
+      const card = document.createElement("div");
+      card.style.padding = "12px";
+      card.style.margin = "10px 0";
+      card.style.border = "1px solid #ddd";
+      card.style.borderRadius = "8px";
+      card.textContent = item.question;
+      panel.appendChild(card);
+    });
+  } catch (error) {
+    const message = document.createElement("p");
+    message.textContent = error.message;
+    panel.appendChild(message);
+  }
+}
 </script>
 </body>
 </html>
