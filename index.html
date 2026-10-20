@@ -261,6 +261,44 @@ footer {
     <div id="videoLibrary" class="video-grid"></div>
     <div class="notice">Educational content only. Follow approved clinical policies and procedures. External videos are not automatically endorsed or clinically validated.</div>
   </section>
+  <section class="panel" id="nursingExpert"
+style="display:none;">
+
+  <h2>Ask Nursing Expert</h2>
+
+  <p>
+    Submit your nursing question to be
+    reviewed by a designated nursing expert.
+  </p>
+
+  <h3>Submit Your Question</h3>
+
+  <textarea
+    id="nursingQuestion"
+    rows="5"
+    maxlength="1000"
+    placeholder="Type your nursing question here..."
+    style="width:100%;padding:12px;">
+  </textarea>
+
+  <p>Please do not include patient-identifiable information.</p>
+
+  <button type="button" id="submitNursingQuestion">
+    Submit Question
+  </button>
+
+  <p id="questionStatus" role="status"></p>
+
+  <hr>
+
+  <h3>Approved Questions & Answers</h3>
+
+  <div id="approvedNursingAnswers">
+    Approved nursing answers will appear here.
+  </div>
+
+</section>
+
 </main>
 
 <footer>
