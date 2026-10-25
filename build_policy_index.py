@@ -25,23 +25,23 @@ for pdf in sorted(ROOT.rglob("*.pdf")):
         + quote(pdf.as_posix(), safe="/")
     )
 
- try:
-            with fitz.open(pdf) as document:
-                for page_number, page in enumerate(document, 1):
-                    text = page.get_text("text", sort=False).strip()
+    try:
+        with fitz.open(pdf) as document:
+            for page_number, page in enumerate(document, 1):
+                text = page.get_text("text", sort=False).strip()
 
-                    if not text:
-                        continue
+                if not text:
+                    continue
 
-                    records.append({
-                        "unit": unit,
-                        "hospital": hospital,
-                        "policy": pdf.name,
-                        "page": page_number,
-                        "text": text,
-                        "url": url
-                    })
-    except Exception as error:
+                records.append({
+                    "unit": unit,
+                    "hospital": hospital,
+                    "policy": pdf.name,
+                    "page": page_number,
+                    "text": text,
+                    "url": url
+                })
+     except Exception as error:
         print(f"Error reading {pdf}: {error}")
 
 OUTPUT.write_text(
