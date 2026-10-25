@@ -1041,6 +1041,63 @@ async function showApprovedNursingAnswers() {
 }
 
 showApprovedNursingAnswers();
+   document.getElementById("askPolicyAI").addEventListener("click", async () => {
+  const question = document.getElementById("policyQuestion").value.trim();
+  const answer = document.getElementById("policyAIAnswer");
+
+  if (!question) {
+    answer.textContent = "Please enter your question.";
+    return;
+  }
+
+  answer.textContent = "Searching approved policies...";
+
+  try {
+    const response = await fetch("./policy_index.json");
+    if (!response.ok) throw new Error("Policy index unavailable.");
+
+    const policies = await response.json();
+    const words = question.toLowerCase().match(/[a-z0-9]{3,}/g) || [];
+
+    const results = policies
+      .map(item => ({
+        item,
+        score: words.filter(word =>
+          (item.text || "").toLowerCase().includes(word)
+        ).length
+      }))
+      .filter(result => result.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    answer.replaceChildren();
+
+    if (!results.length) {
+      answer.textContent = "No matching policy text found. Please consult the approved policy.";
+      return;
+    }
+
+    results.forEach(({item}) => {
+      const card = document.createElement("div");
+      const heading = document.createElement("strong");
+      const excerpt = document.createElement("p");
+      const link = document.createElement("a");
+
+      heading.textContent = `${item.policy} — Page ${item.page}`;
+      excerpt.textContent = (item.text || "").slice(0, 900);
+      link.href = item.url;
+      link.textContent = "View source policy";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
+      card.append(heading, excerpt, link);
+      card.style.marginBottom = "20px";
+      answer.appendChild(card);
+    });
+  } catch (error) {
+    answer.textContent = "Unable to search policies: " + error.message;
+  }
+}); 
 </script>
 </body>
 </html>
