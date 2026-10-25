@@ -41,7 +41,8 @@ for pdf in sorted(ROOT.rglob("*.pdf")):
                     "text": text,
                     "url": url
                 })
-except Exception as error:
+
+    except Exception as error:
         print(f"Error reading {pdf}: {error}")
 
 OUTPUT.write_text(
