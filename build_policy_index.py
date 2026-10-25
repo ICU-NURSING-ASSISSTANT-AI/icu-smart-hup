@@ -28,7 +28,7 @@ for pdf in sorted(ROOT.rglob("*.pdf")):
     try:
         with fitz.open(pdf) as document:
             for page_number, page in enumerate(document, 1):
-                text = page.get_text("text").strip()
+              text = page.get_text("text", sort=True).strip()
 
                 if not text:
                     continue
