@@ -1,9 +1,42 @@
 [
   {
+    "title": "Acid-Base Map and Compensatory Mechanisms",
+    "category": "Acid-Base Balance",
+    "url": "./videos/Acid-base map and compensatory mechanisms.mp4"
+  },
+  {
+    "title": "Atrial Fibrillation",
+    "category": "Cardiology",
+    "url": "./videos/Atrial fibrillation (A-fib, AF) - causes, symptoms, treatment & pathology.mp4"
+  },
+  {
+    "title": "Electrocardiography (ECG/EKG)",
+    "category": "Cardiology",
+    "url": "./videos/Electrocardiography (ECG EKG) - basics - Osmosis from Elsevier (1078p).mp4"
+  },
+  {
     "title": "Endotracheal Intubation",
     "category": "Airway Management",
-    "description": "Step-by-Step Educational Animation",
-    "url": "https://www.youtube.com/watch?v=zMMjI86QJNA",
-    "source": "E-Pulsepoints / YouTube"
+    "url": "./videos/Endotracheal intubation Step by step procedure - E-Pulsepoints (1080p) (1).mp4"
+  },
+  {
+    "title": "Physiologic pH and Buffers",
+    "category": "Acid-Base Balance",
+    "url": "./videos/Physiologic pH and buffers - acid-base physiology.mp4"
+  },
+  {
+    "title": "Pneumothorax",
+    "category": "Respiratory",
+    "url": "./videos/Pneumothorax - causes, symptoms, diagnosis, treatment, pathology.mp4"
+  },
+  {
+    "title": "Tracheostomy Suctioning",
+    "category": "Airway Management",
+    "url": "./videos/Tracheostomy Suctioning Nursing _ Osmosis.mp4"
+  },
+  {
+    "title": "Educational Video",
+    "category": "General",
+    "url": "./videos/videoplayback.mp4"
   }
 ]
