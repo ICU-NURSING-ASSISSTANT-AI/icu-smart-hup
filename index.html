@@ -76,8 +76,39 @@ window.addEventListener('online',()=>{updateConnection();syncOfflineContent();})
 function selectPolicyUnit(unit){if(!['ICU','NICU','PICU'].includes(unit))return;activePolicyUnit=unit;document.querySelectorAll('.policy-unit').forEach(b=>{b.classList.toggle('active',b.dataset.unit===unit);b.setAttribute('aria-pressed',String(b.dataset.unit===unit));});$('policyUnitHeading').textContent=unit+' Policies';$('policySearch').value='';renderPolicyFiles();}
 function selectHospital(h){activeHospital=h;renderPolicyFiles();}
 function fileUrl(file){return './'+file.path.split('/').map(encodeURIComponent).join('/');}
+// Open a locally cached PDF using a blob URL, avoiding network navigation offline.
+async function openPolicyDocument(file, event){
+ if(event)event.preventDefault();
+ const tab=window.open('','_blank');
+ if(tab){tab.document.title='Opening saved policy';tab.document.body.textContent='Opening policy PDF…';}
+ try{
+  const url=fileUrl(file);
+  const cache=await caches.open(OFFLINE_DOCS);
+  let response=await cache.match(url);
+  if(!response && navigator.onLine){
+   const remote=await fetch(url);
+   if(!remote.ok)throw Error('HTTP '+remote.status);
+   response=remote;
+  }
+  if(!response)throw Error('This PDF has not been saved on this device. Connect to the internet and save the hospital policies first.');
+  const bytes=await response.blob();
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const blobUrl=URL.createObjectURL(blob);
+  if(tab){tab.location.replace(blobUrl);}else{location.href=blobUrl;}
+  setTimeout(()=>URL.revokeObjectURL(blobUrl),300000);
+ }catch(err){
+  if(tab){tab.document.body.textContent='Unable to open saved PDF: '+err.message;}
+  else alert('Unable to open saved PDF: '+err.message);
+ }
+}
+function makePolicyLink(file,label){
+ const a=document.createElement('a');a.href=fileUrl(file);a.target='_blank';a.rel='noopener noreferrer';a.textContent=label;
+ a.addEventListener('click',event=>openPolicyDocument(file,event));
+ return a;
+}
+
 async function listPolicyFiles(unit,hospital){const key=unit+'/'+hospital;if(policyCache.has(key)&&Date.now()-policyCache.get(key).time<60000)return policyCache.get(key).files;const folder='policies/'+key;const api='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+folder.split('/').map(encodeURIComponent).join('/')+'?ref=main';let r;try{r=await fetch(api,{cache:'no-store'});}catch(e){const saved=readJSON('icu-policy-list-'+key,null);if(saved)return saved;throw e;}if(r.status===404)return [];if(!r.ok)throw Error('GitHub HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Unexpected GitHub response');const files=data.filter(f=>f.type==='file'&&f.name.toLowerCase().endsWith('.pdf')).map(f=>({name:f.name,path:f.path}));policyCache.set(key,{files,time:Date.now()});writeJSON('icu-policy-list-'+key,files);return files;}
-async function renderPolicyFiles(){const unit=activePolicyUnit,hospital=activeHospital,query=$('policySearch').value.trim().toLowerCase();$('policyLibrary').replaceChildren();$('policyMessage').textContent='Loading policies...';try{const files=await listPolicyFiles(unit,hospital);if(unit!==activePolicyUnit||hospital!==activeHospital)return;const matches=files.filter(f=>f.name.toLowerCase().includes(query));$('policyMessage').textContent=matches.length+' policy file(s) found'+(!files.length?' (folder empty or not found)':'');for(const f of matches){const li=document.createElement('li'),a=document.createElement('a');a.href=fileUrl(f);a.target='_blank';a.rel='noopener noreferrer';a.textContent='📄 '+f.name;li.append(a);$('policyLibrary').append(li);}}catch(e){$('policyMessage').textContent='Unable to load policies: '+e.message;}}
+async function renderPolicyFiles(){const unit=activePolicyUnit,hospital=activeHospital,query=$('policySearch').value.trim().toLowerCase();$('policyLibrary').replaceChildren();$('policyMessage').textContent='Loading policies...';try{const files=await listPolicyFiles(unit,hospital);if(unit!==activePolicyUnit||hospital!==activeHospital)return;const matches=files.filter(f=>f.name.toLowerCase().includes(query));$('policyMessage').textContent=matches.length+' policy file(s) found'+(!files.length?' (folder empty or not found)':'');for(const f of matches){const li=document.createElement('li');li.append(makePolicyLink(f,'📄 '+f.name));$('policyLibrary').append(li);}}catch(e){$('policyMessage').textContent='Unable to load policies: '+e.message;}}
 function calculateVolume(){const dose=Number($('dose').value),c=Number($('concentration').value);$('calcResult').textContent=dose>0&&c>0?'Mathematical example: '+(dose/c).toFixed(3)+' mL. Not a clinical recommendation.':'Enter positive values in matching units.';}
 function normalize(s){return String(s||'').toLocaleLowerCase().normalize('NFKC').replace(/[\u064b-\u065f\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ـ/g,'').replace(/\s+/g,' ').trim();}
 function resultCard(title,excerpt,url){const card=document.createElement('article');card.className='result-card';const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=title;const p=document.createElement('p');p.textContent=excerpt;card.append(a,p);return card;}
@@ -123,7 +154,7 @@ function writeJSON(k,val){try{localStorage.setItem(k,JSON.stringify(val));}catch
 async function fetchWithOffline(path){try{const r=await fetch(path,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);if('caches' in window){try{const cache=await caches.open(OFFLINE_DOCS);await cache.put(path,r.clone());}catch(e){console.warn('Cache storage unavailable',e);}}return r;}catch(e){if('caches' in window){const saved=await caches.match(path);if(saved)return saved;}throw e;}}
 async function getApprovedQA(){try{const items=await sb('/rest/v1/nursing_questions?select=question,answer,answered_at&is_approved=eq.true&order=answered_at.desc',null);if(Array.isArray(items)){writeJSON('icu-approved-qa',{savedAt:new Date().toISOString(),items});return items;}throw Error('Unexpected Q&A response');}catch(e){const saved=readJSON('icu-approved-qa',null);if(saved)return saved.items;throw e;}}
 async function cacheSelectedPolicies(){const key=activePolicyUnit+'/'+activeHospital;const files=await listPolicyFiles(activePolicyUnit,activeHospital);if(!files.length)throw Error('No policies found for '+key);if(!('caches' in window))throw Error('Offline storage not supported');const cache=await caches.open(OFFLINE_DOCS);let ok=0;for(const f of files){const url=fileUrl(f);try{const r=await fetch(url);if(!r.ok)throw Error('HTTP '+r.status);await cache.put(url,r);ok++;}catch(e){console.warn('Policy not saved',f.path,e);}}
- const registry=readJSON('icu-offline-policies',{});registry[key]={files:files.filter(f=>true),savedAt:new Date().toISOString()};writeJSON('icu-offline-policies',registry);return ok+' of '+files.length+' policies saved for '+key;}
+ const cacheKeys=await cache.keys();const saved=[];for(const f of files){if(cacheKeys.some(req=>new URL(req.url).pathname===new URL(fileUrl(f),location.href).pathname))saved.push(f);}const registry=readJSON('icu-offline-policies',{});registry[key]={files:saved,savedAt:new Date().toISOString()};writeJSON('icu-offline-policies',registry);return saved.length+' of '+files.length+' policies saved for '+key;}
 async function cacheVideo(url){if(!('caches' in window))throw Error('Storage unavailable');if(!navigator.onLine)throw Error('Connect to internet first');const response=await fetch(url);if(!response.ok)throw Error('HTTP '+response.status);const cache=await caches.open(OFFLINE_VIDEOS);await cache.put(url,response);const stored=readJSON('icu-saved-videos',[]);if(!stored.some(v=>v.url===url)){const v=videos.find(v=>v.url===url);stored.push({url,title:v?.title||url.split('/').pop(),savedAt:new Date().toISOString()});writeJSON('icu-saved-videos',stored);}}
 async function syncOfflineContent(){
  if(!navigator.onLine)throw Error('No internet connection');
@@ -144,7 +175,7 @@ async function syncOfflineContent(){
  if(errors.length)throw Error(errors.join(' | '));
  return 'Sync completed successfully.';
 }
-async function renderOfflineLibrary(){const reg=readJSON('icu-offline-policies',{}),list=$('offlinePolicies');list.replaceChildren();let count=0;for(const [group,info] of Object.entries(reg)){for(const f of info.files||[]){const li=document.createElement('li'),a=document.createElement('a');a.href=fileUrl(f);a.target='_blank';a.rel='noopener noreferrer';a.textContent='📄 '+group+' — '+f.name;li.append(a);list.append(li);count++;}}if(!count)list.textContent='No policies saved yet. Open Policies, choose a unit and hospital, then save that set here.';
+async function renderOfflineLibrary(){const reg=readJSON('icu-offline-policies',{}),list=$('offlinePolicies');list.replaceChildren();let count=0;for(const [group,info] of Object.entries(reg)){for(const f of info.files||[]){const li=document.createElement('li');li.append(makePolicyLink(f,'📄 '+group+' — '+f.name));list.append(li);count++;}}if(!count)list.textContent='No policies saved yet. Open Policies, choose a unit and hospital, then save that set here.';
  const saved=readJSON('icu-approved-qa',null),qa=$('offlineQA');qa.replaceChildren();if(saved?.items?.length){for(const item of saved.items){const card=document.createElement('article');card.className='result-card';const q=document.createElement('strong');q.textContent='Q: '+item.question;const a=document.createElement('p');a.textContent='A: '+(item.answer||'');card.append(q,a);qa.append(card);}}else qa.textContent='No approved answers saved yet.';
  const videoList=$('offlineVideos');videoList.replaceChildren();for(const v of readJSON('icu-saved-videos',[])){const card=document.createElement('article');card.className='video-card';const title=document.createElement('h3');title.textContent=v.title;const player=document.createElement('video');player.controls=true;player.playsInline=true;player.preload='none';player.src=v.url;card.append(title,player);videoList.append(card);}if(!videoList.children.length)videoList.textContent='No videos downloaded yet.';
  $('offlineStatus').textContent='Connection: '+(navigator.onLine?'Online':'Offline')+'\nSaved policy entries: '+count+'\nApproved Q&A last sync: '+(saved?.savedAt?new Date(saved.savedAt).toLocaleString():'Not yet synced')+'\nPolicy index: saved after first successful sync.\nSome files may be removed by your device to free storage.';
