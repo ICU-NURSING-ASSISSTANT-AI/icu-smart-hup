@@ -174,7 +174,43 @@ function classifyVideo(title){const t=String(title||'').toLowerCase();
  if(/pneumothorax|pleural|respirat|lung|pulmon|asthma|copd|pneumonia/.test(t))return 'Respiratory System';
  return 'General Nursing Education';
 }
-function renderVideos(){const q=$('videoSearch').value.toLowerCase(),category=$('videoCategory').value,library=$('videoLibrary');library.replaceChildren();const matches=videos.filter(v=>(!category||v.category===category)&&[v.title,v.description,v.category].join(' ').toLowerCase().includes(q));$('videoStatus').textContent=matches.length+' video(s) found';for(const v of matches){const card=document.createElement('article');card.className='video-card';const id=youtubeId(v.url);if(id){const frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+id;frame.title=v.title;frame.loading='lazy';frame.allowFullscreen=true;card.append(frame);}else if(isVideoUrl(v.url)){const video=document.createElement('video');video.dataset.src=v.url;video.controls=true;video.preload='none';video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');video.addEventListener('pointerdown',()=>{if(!video.src)video.src=video.dataset.src;},{once:true});video.addEventListener('play',()=>{if(!video.src)video.src=video.dataset.src;});video.src=v.url;card.append(video);const save=document.createElement('button');save.type='button';save.textContent='↓ Save Offline';save.onclick=async()=>{save.disabled=true;save.textContent='Saving…';try{await cacheVideo(v.url);save.textContent='✓ Saved Offline';renderOfflineLibrary();}catch(e){save.textContent='Unable to save: '+e.message;}finally{save.disabled=false;}};card.append(save);}const h=document.createElement('h3');h.textContent=v.title;const tag=document.createElement('small');tag.textContent=v.category;const p=document.createElement('p');p.textContent=v.description||'';card.append(h,tag,p);library.append(card);}if(!matches.length)library.textContent='No matching videos.';}
+function renderVideos(){
+ const q=$('videoSearch').value.toLowerCase(),category=$('videoCategory').value,library=$('videoLibrary');
+ library.replaceChildren();
+ const matches=videos.filter(v=>(!category||v.category===category)&&[v.title,v.description,v.category].join(' ').toLowerCase().includes(q));
+ $('videoStatus').textContent=matches.length+' video(s) found';
+ for(const v of matches){
+  const card=document.createElement('article');card.className='video-card';
+  const id=youtubeId(v.url);
+  if(id){
+   const frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+id;frame.title=v.title;frame.loading='lazy';frame.allowFullscreen=true;card.append(frame);
+  }else if(isVideoUrl(v.url)){
+   const video=document.createElement('video');video.controls=true;video.preload='metadata';video.playsInline=true;
+   video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
+   video.style.background='#08131f';
+   // The native player uses the published file URL. An external link below
+   // helps distinguish a player/codec problem from a missing or blocked file.
+   video.src=v.url;
+   const diagnostic=document.createElement('p');diagnostic.className='offline-note';diagnostic.setAttribute('role','status');
+   video.addEventListener('error',()=>{
+    const code=video.error?.code;
+    const messages={1:'Playback was interrupted.',2:'The video could not be downloaded. Check the connection or file URL.',3:'The browser could not decode this video. Convert it to MP4 (H.264 video + AAC audio).',4:'This video format or source is not supported by this browser.'};
+    diagnostic.textContent='Playback issue: '+(messages[code]||'Unable to load video.')+' Try “Open video directly” below.';
+   });
+   video.addEventListener('loadedmetadata',()=>{if(diagnostic.textContent.startsWith('Playback issue:'))diagnostic.textContent='';});
+   card.append(video);
+   const direct=document.createElement('a');direct.href=v.url;direct.target='_blank';direct.rel='noopener noreferrer';direct.textContent='▶ Open video directly';
+   direct.style.display='inline-block';direct.style.margin='10px 10px 10px 0';direct.style.fontWeight='bold';
+   card.append(direct,diagnostic);
+   const save=document.createElement('button');save.type='button';save.textContent='↓ Save Offline';
+   save.onclick=async()=>{save.disabled=true;save.textContent='Saving…';try{await cacheVideo(v.url);save.textContent='✓ Saved Offline';renderOfflineLibrary();}catch(e){save.textContent='Unable to save: '+e.message;}finally{save.disabled=false;}};
+   card.append(save);
+  }
+  const h=document.createElement('h3');h.textContent=v.title;const tag=document.createElement('small');tag.textContent=v.category;
+  const p=document.createElement('p');p.textContent=v.description||'';card.append(h,tag,p);library.append(card);
+ }
+ if(!matches.length)library.textContent='No matching videos.';
+}
 let videoLoadPromise=null;
 async function loadVideos(){if(videoLoadPromise)return videoLoadPromise;videoLoadPromise=(async()=>{const status=$('videoStatus');status.textContent='Loading videos...';let folderVideos=[],savedVideos=[],apiError=null;
 try{const endpoint='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/videos?ref=main';const r=await fetch(endpoint+'&_='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('GitHub API HTTP '+r.status);const files=await r.json();if(!Array.isArray(files))throw Error('Unexpected GitHub folder response');folderVideos=files.filter(f=>f.type==='file'&&/\.(mp4|webm|mov|m4v|ogg)$/i.test(f.name)).map(f=>{const title=f.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();return{title,description:'',category:classifyVideo(title),url:'./'+f.path.split('/').map(encodeURIComponent).join('/')};});}catch(e){apiError=e;console.warn('Automatic video listing unavailable:',e);}
