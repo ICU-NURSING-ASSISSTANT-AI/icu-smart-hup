@@ -43,7 +43,7 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
 <article class="card"><div class="icon">🤖</div><h3>AI Policy Assistant</h3><p>Get short policy-based answers with page references.</p><button onclick="showPanel('ai-policy-assistant')">Open Policy Assistant</button></article>
 <article class="card"><div class="icon">🎥</div><h3>Educational Videos</h3><p>Browse training videos.</p><button onclick="showPanel('videos')">Watch Videos</button></article>
 <article class="card"><div class="icon">🩺</div><h3>Ask Nursing Expert</h3><p>Submit questions without an account; view nurse-approved answers.</p><button onclick="showPanel('nursingExpert')">Ask Nursing Expert</button></article>
-<article class="card"><div class="icon">💬</div><h3>Nursing Discussion Forum</h3><p>A future space for verified nursing staff to discuss professional topics.</p><button onclick="showPanel('discussionForum')">Open Forum</button></article>
+<article class="card"><div class="icon">💬</div><h3>Nursing Discussion Forum</h3><p>Open nursing discussions, questions and replies.</p><button onclick="showPanel('discussionForum')">Open Forum</button></article>
 <article class="card"><div class="icon">🏥</div><h3>NIBCO Medical Supply</h3><p>Medical supplies and equipment resource section.</p><button onclick="showPanel('nibcoSupply')">Open Supplies</button></article>
 </section></div>
 <section class="panel" id="policies"><h2>📚 Policies & Procedures</h2><p>Select a clinical unit and hospital.</p><div class="policy-units" id="policyUnits"><button class="policy-unit active" data-unit="ICU" onclick="selectPolicyUnit('ICU')"><strong>ICU</strong><small>Adult Intensive Care</small></button><button class="policy-unit" data-unit="NICU" onclick="selectPolicyUnit('NICU')"><strong>NICU</strong><small>Neonatal Intensive Care</small></button><button class="policy-unit" data-unit="PICU" onclick="selectPolicyUnit('PICU')"><strong>PICU</strong><small>Pediatric Intensive Care</small></button></div><label for="hospitalSelect">Select Hospital</label><select id="hospitalSelect" onchange="selectHospital(this.value)"><option value="King-Fahad-Hospital">King Fahad Hospital</option><option value="Prince-Mishari-Hospital">Prince Mishari Hospital</option><option value="Al-Mikhwah-Hospital">Al Mikhwah Hospital</option></select><h3 id="policyUnitHeading">ICU Policies</h3><label for="policySearch">Search policy title</label><input id="policySearch" type="search" placeholder="Search policy title..." oninput="renderPolicyFiles()"><p id="policyMessage" class="status" role="status"></p><ul id="policyLibrary" class="policy-list"></ul><div class="notice">For reference only. Verify approval, version and applicability. Files in a public repository are publicly accessible.</div></section>
@@ -53,7 +53,15 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
 <section class="panel" id="ai-policy-assistant"><h2>🤖 AI Policy Assistant</h2><p>Ask a question in English. The assistant extracts relevant statements from indexed policies and provides the original source.</p><label for="policyHospitalFilter">Hospital</label><select id="policyHospitalFilter"><option value="">All indexed hospitals</option><option value="Prince-Mishari-Hospital">Prince Mishari Hospital</option><option value="King-Fahad-Hospital">King Fahad Hospital</option><option value="Al-Mikhwah-Hospital">Al Mikhwah Hospital</option></select><label for="policyQuestion">Your policy question (English)</label><textarea id="policyQuestion" rows="3" placeholder="e.g. What are the ICU admission priorities?"></textarea><button type="button" id="askPolicyAI">Find Policy Answer</button><div id="policyAIAnswer" role="status" aria-live="polite" style="margin-top:15px">Your policy-based answer will appear here.</div><div class="notice">Extractive search only — not generative AI or clinical advice. Text may contain PDF extraction errors. Verify the full, currently approved policy and its applicability. Do not enter patient information.</div></section>
 <section class="panel" id="videos"><h2>🎥 Educational Video Library</h2><p>Select a topic below, or search the full video library. New videos placed in the GitHub <strong>videos</strong> folder are detected automatically.</p><div id="videoTopics" class="video-topics" aria-label="Video categories"></div><div class="video-tools"><input id="videoSearch" type="search" placeholder="Search videos..."><select id="videoCategory"><option value="">All Categories</option></select></div><p id="videoStatus" role="status"></p><p class="status" style="font-size:12px">Video library update: 26 Oct 2026 · Auto-categorized by filename</p><button type="button" id="refreshVideos" style="margin-bottom:12px">Refresh Video Library</button><div id="videoLibrary" class="video-grid"></div><p class="offline-note">To watch offline, use “Save Offline” on a video while connected. Availability depends on storage and video format.</p><div class="notice">Educational content only. External videos are not automatically endorsed.</div></section>
 <section class="panel" id="offlineLibrary"><h2>📥 Offline Library</h2><p>Save approved reference materials while connected. Previously saved items can be read offline on this device.</p><div class="offline-actions"><button type="button" id="syncOffline">↻ Sync offline content</button><button type="button" id="savePolicySet">📚 Save selected hospital policies</button></div><div id="offlineStatus" class="offline-status" role="status">Checking saved content…</div><h3>Saved Policies</h3><ul id="offlinePolicies" class="policy-list"></ul><h3>Saved Approved Nursing Q&A</h3><div id="offlineQA"></div><h3>Downloaded Videos</h3><div id="offlineVideos"></div><p class="offline-note">Saved documents may become outdated. Always verify the latest approved policy when connected. Device storage may be cleared by the operating system.</p></section>
-<section class="panel" id="discussionForum"><h2>💬 Nursing Discussion Forum</h2><p>A dedicated space for professional nursing discussions.</p><div class="notice"><strong>Coming soon.</strong> Staff registration, identity protection, moderation, and posting will be connected securely in a later Supabase phase. The forum is not yet accepting posts.</div><h3>Planned discussion areas</h3><div class="video-grid"><article class="video-card"><h3>ICU Nursing</h3><p>Critical care discussions.</p></article><article class="video-card"><h3>NICU Nursing</h3><p>Neonatal nursing discussions.</p></article><article class="video-card"><h3>PICU Nursing</h3><p>Pediatric critical care discussions.</p></article><article class="video-card"><h3>General Nursing</h3><p>Professional learning and shared experience.</p></article></div><p class="offline-note">Do not share patient-identifiable information.</p></section>
+<section class="panel" id="discussionForum"><h2>💬 Nursing Discussion Forum</h2><p>Open professional discussions for nurses. No account required.</p>
+<div class="notice"><strong>Privacy:</strong> Do not include patient names, identifiers, clinical images, confidential hospital information or personal contact details. Posts are public. This forum is not for urgent clinical decisions.</div>
+<h3>Start a Discussion</h3><label for="forumCategory">Nursing Area</label><select id="forumCategory"><option value="ICU">ICU Nursing</option><option value="NICU">NICU Nursing</option><option value="PICU">PICU Nursing</option><option value="General">General Nursing</option></select>
+<label for="forumAuthor">Display Name</label><input id="forumAuthor" maxlength="80" placeholder="Your name or nickname">
+<label for="forumTitle">Discussion Title</label><input id="forumTitle" maxlength="200" placeholder="What would you like to discuss?">
+<label for="forumContent">Discussion</label><textarea id="forumContent" rows="4" maxlength="5000" placeholder="Share a professional question or topic..."></textarea>
+<button type="button" id="forumSubmit">Publish Discussion</button><p id="forumSubmitStatus" role="status"></p>
+<hr><h3>Recent Discussions</h3><label for="forumFilter">Filter by Area</label><select id="forumFilter"><option value="">All Areas</option><option value="ICU">ICU</option><option value="NICU">NICU</option><option value="PICU">PICU</option><option value="General">General Nursing</option></select>
+<button type="button" id="forumRefresh">↻ Refresh Discussions</button><p id="forumStatus" role="status"></p><div id="forumPosts"></div></section>
 <section class="panel" id="nibcoSupply"><h2>🏥 NIBCO Medical Supply</h2><p>A dedicated space for medical supplies, equipment references, and educational resources.</p><div class="notice">Section ready. Product catalog and approved reference links can be added later. No external supplier connection has been configured.</div></section>
 <section class="panel" id="nursingExpert"><h2>Ask Nursing Expert</h2><p>Submit a nursing question for review by a designated nurse. No account needed to ask.</p><label for="nursingQuestion">Submit Your Question</label><textarea id="nursingQuestion" rows="5" maxlength="1000" placeholder="Type your nursing question here..."></textarea><p>Do not include patient-identifiable information.</p><button id="submitNursingQuestion">Submit Question</button><p id="questionStatus" role="status"></p><hr><h3>Approved Questions & Answers</h3><div id="approvedNursingAnswers">Loading approved answers...</div></section>
 <section class="panel" id="reviewerPanel"><h2>Nurse Reviewer Dashboard</h2><p>Authorized nursing reviewers only.</p><input id="reviewerEmail" type="email" placeholder="Reviewer Email" autocomplete="username"><input id="reviewerPassword" type="password" placeholder="Password" autocomplete="current-password"><button id="reviewerLogin">Login</button> <button id="reviewerLogout" hidden>Logout</button><p id="reviewerStatus" role="status"></p><div id="reviewerQuestionsPanel" hidden></div></section>
@@ -72,7 +80,7 @@ function closeSidebar(){ $('appSidebar').classList.remove('open');$('menuBackdro
 function openSidebar(){ $('appSidebar').classList.add('open');$('menuBackdrop').classList.add('open');$('menuToggle').setAttribute('aria-expanded','true');}
 function navigateTo(id,push=true){if(id!=='home'&&!$(id))return;activeView=id;closeSidebar();document.querySelectorAll('.panel').forEach(p=>p.style.display='none');$('homeView').hidden=id!=='home';$('pageNav').style.display=id==='home'?'none':'flex';if(id!=='home'){$(id).style.display='block';const label=document.querySelector('[data-view="'+id+'"]');$('pageTitle').textContent=label?label.textContent.trim():id;}
  document.querySelectorAll('.sidebar-links button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(push)history.pushState({view:id},'',id==='home'?location.pathname+location.search:'#'+id);window.scrollTo({top:0,behavior:'smooth'});
- if(id==='policies')renderPolicyFiles();if(id==='nursingExpert')loadApprovedNursingAnswers();if(id==='videos')loadVideos();if(id==='offlineLibrary')renderOfflineLibrary();}
+ if(id==='discussionForum')loadForumPosts();if(id==='policies')renderPolicyFiles();if(id==='nursingExpert')loadApprovedNursingAnswers();if(id==='videos')loadVideos();if(id==='offlineLibrary')renderOfflineLibrary();}
 function showPanel(id){navigateTo(id);}
 $('menuToggle').onclick=openSidebar;$('closeMenu').onclick=closeSidebar;$('menuBackdrop').onclick=closeSidebar;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSidebar();});
 document.querySelectorAll('.sidebar-links button').forEach(b=>b.addEventListener('click',()=>navigateTo(b.dataset.view)));
@@ -229,6 +237,57 @@ videos=[...byUrl.values()].map(v=>({...v,category:classifyVideo(v.title)}));cons
 })();try{await videoLoadPromise;}finally{videoLoadPromise=null;}}
 $('videoSearch').addEventListener('input',renderVideos);$('videoCategory').addEventListener('change',renderVideos);$('refreshVideos').addEventListener('click',loadVideos);loadVideos();
 async function sb(path,token,options={}){const headers={apikey:SUPABASE_KEY,...(token?{Authorization:'Bearer '+token}:{}),...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})};const r=await fetch(SUPABASE_URL+path,{...options,headers});if(!r.ok)throw Error('HTTP '+r.status+': '+(await r.text()).slice(0,150));if(r.status===204||r.headers.get('content-length')==='0'||options.headers?.Prefer==='return=minimal')return null;return r.json();}
+
+// Public discussion forum: only SELECT/INSERT exposed to anonymous visitors.
+const forumEl=(tag,content,cls)=>{const e=document.createElement(tag);if(content!==undefined)e.textContent=content;if(cls)e.className=cls;return e;};
+function forumDate(value){const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString();}
+async function loadForumPosts(){
+ const out=$('forumPosts'),status=$('forumStatus'),category=$('forumFilter').value;
+ out.replaceChildren();status.textContent='Loading discussions...';
+ try{
+  const filter=category?'&category=eq.'+encodeURIComponent(category):'';
+  const posts=await sb('/rest/v1/forum_posts?select=id,category,author_name,title,content,created_at&order=created_at.desc&limit=50'+filter,null);
+  status.textContent=posts.length+' discussion(s) found. Showing up to 50 most recent.';
+  if(!posts.length){out.textContent='No discussions yet. Start the first one!';return;}
+  for(const post of posts){
+   const card=forumEl('article',undefined,'result-card');
+   card.append(forumEl('small',post.category+' • '+post.author_name+' • '+forumDate(post.created_at)),forumEl('h3',post.title),forumEl('p',post.content));
+   const replies=forumEl('div');const toggle=forumEl('button','View Replies / Reply');
+   toggle.type='button';toggle.setAttribute('aria-expanded','false');
+   toggle.onclick=async()=>{
+    if(!replies.hidden&&replies.childNodes.length){replies.hidden=true;toggle.setAttribute('aria-expanded','false');return;}
+    replies.hidden=false;toggle.setAttribute('aria-expanded','true');replies.textContent='Loading replies...';
+    try{
+     const rows=await sb('/rest/v1/forum_replies?select=id,author_name,content,created_at&post_id=eq.'+encodeURIComponent(post.id)+'&order=created_at.asc&limit=100',null);
+     replies.replaceChildren();replies.append(forumEl('h4','Replies ('+rows.length+')'));
+     for(const row of rows){const box=forumEl('div',undefined,'result-card');box.append(forumEl('small',row.author_name+' • '+forumDate(row.created_at)),forumEl('p',row.content));replies.append(box);}
+     const name=forumEl('input');name.placeholder='Your display name';name.maxLength=80;name.setAttribute('aria-label','Reply display name');
+     const content=forumEl('textarea');content.placeholder='Write your reply...';content.rows=3;content.maxLength=3000;content.setAttribute('aria-label','Reply text');
+     const send=forumEl('button','Publish Reply');send.type='button';const note=forumEl('p');note.setAttribute('role','status');
+     send.onclick=async()=>{
+      const author_name=name.value.trim(),body=content.value.trim();
+      if(author_name.length<2||author_name.length>80||body.length<2||body.length>3000){note.textContent='Enter a name (2–80 characters) and reply (2–3000 characters).';return;}
+      send.disabled=true;note.textContent='Publishing...';
+      try{await sb('/rest/v1/forum_replies',null,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({post_id:post.id,author_name,content:body})});replies.replaceChildren();toggle.click();}catch(e){note.textContent='Unable to publish: '+e.message;}finally{send.disabled=false;}
+     };
+     replies.append(name,content,send,note);
+    }catch(e){replies.textContent='Unable to load replies: '+e.message;}
+   };
+   replies.hidden=true;card.append(toggle,replies);out.append(card);
+  }
+ }catch(e){status.textContent='Unable to load discussions: '+e.message;}
+}
+$('forumSubmit').addEventListener('click',async()=>{
+ const author_name=$('forumAuthor').value.trim(),title=$('forumTitle').value.trim(),content=$('forumContent').value.trim(),category=$('forumCategory').value;
+ const status=$('forumSubmitStatus'),btn=$('forumSubmit');
+ if(author_name.length<2||author_name.length>80||title.length<5||title.length>200||content.length<5||content.length>5000){status.textContent='Name: 2–80 characters; title: 5–200; discussion: 5–5000.';return;}
+ btn.disabled=true;status.textContent='Publishing...';
+ try{await sb('/rest/v1/forum_posts',null,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({category,author_name,title,content})});$('forumTitle').value='';$('forumContent').value='';status.textContent='Discussion published successfully.';await loadForumPosts();}
+ catch(e){status.textContent='Unable to publish: '+e.message;}finally{btn.disabled=false;}
+});
+$('forumFilter').addEventListener('change',loadForumPosts);
+$('forumRefresh').addEventListener('click',loadForumPosts);
+
 async function submitQuestion(){const question=$('nursingQuestion').value.trim(),status=$('questionStatus'),btn=$('submitNursingQuestion');if(question.length<10||question.length>1000){status.textContent='Enter 10–1000 characters.';return;}btn.disabled=true;status.textContent='Submitting...';try{await sb('/rest/v1/nursing_questions',null,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({question})});$('nursingQuestion').value='';status.textContent='Question submitted. Awaiting nurse review.';}catch(e){status.textContent='Submission failed: '+e.message;}finally{btn.disabled=false;}}
 $('submitNursingQuestion').addEventListener('click',submitQuestion);
 async function loadApprovedNursingAnswers(){const out=$('approvedNursingAnswers');out.textContent='Loading approved questions...';try{const items=await getApprovedQA();out.replaceChildren();if(!Array.isArray(items)||!items.length){out.textContent='No approved questions yet.';return;}for(const item of items){const card=document.createElement('article');card.className='result-card';const h=document.createElement('h4');h.textContent='Q: '+item.question;const p=document.createElement('p');p.textContent='A: '+(item.answer||'');card.append(h,p);out.append(card);}}catch(e){out.textContent='Unable to load approved answers: '+e.message;}}
