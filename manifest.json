@@ -1,0 +1,24 @@
+{
+  "name": "ICU Smart Hub | Al Baha Health Cluster",
+  "short_name": "ICU Smart Hub",
+  "description": "Nursing resources, policies, education and clinical tools",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f7fb",
+  "theme_color": "#102c46",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
