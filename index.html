@@ -334,7 +334,7 @@ $('refreshProtocols').addEventListener('click',loadProtocols);
 
 // Web Push subscription setup: only an authenticated reviewer can register.
 // Supply the complete base64url VAPID PUBLIC key (not a hex digest) before enabling.
-const VAPID_PUBLIC_KEY='REPLACE_WITH_FULL_VAPID_PUBLIC_KEY';
+const VAPID_PUBLIC_KEY='BG69Uz6a8nhfRZnSPL_VhsLCes2Io6Jc02_Ymb_F-Z25_gKCh3v-K2myGeHBZigjt4RM5_mYvU8Oy7QbP-TwSQU';
 function vapidToBytes(key){const base64=key.replace(/-/g,'+').replace(/_/g,'/');const raw=atob(base64.padEnd(Math.ceil(base64.length/4)*4,'='));return Uint8Array.from(raw,c=>c.charCodeAt(0));}
 $('enablePush').addEventListener('click',async()=>{
  const status=$('pushStatus'),button=$('enablePush');
