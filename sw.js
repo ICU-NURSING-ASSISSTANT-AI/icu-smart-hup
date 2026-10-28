@@ -9,3 +9,32 @@ if(/\.(mp4|webm|mov|m4v|ogg)$/i.test(url.pathname)){event.respondWith((async()=>
 if(url.pathname.endsWith('.pdf')||url.pathname.endsWith('/policy_index.json')){event.respondWith((async()=>{try{const r=await fetch(req);if(r.ok){const c=await caches.open(DOCS);await c.put(req,r.clone());}return r;}catch{return await caches.match(req)||Response.error();}})());return;}
 if(['.html','.css','.js','.png','.json'].some(ext=>url.pathname.endsWith(ext))){event.respondWith((async()=>{try{const r=await fetch(req);if(r.ok&& !url.pathname.endsWith('videos.json')){const c=await caches.open(SHELL);await c.put(req,r.clone());}return r;}catch{return await caches.match(req)||Response.error();}})());}
 });
+
+// Reviewer web push notifications. Existing offline caching remains unchanged.
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; }
+  catch { payload = {body: event.data ? event.data.text() : ''}; }
+  const title = typeof payload.title === 'string' ? payload.title : 'ICU Smart Hub';
+  const body = typeof payload.body === 'string' ? payload.body : 'New Nursing Question awaiting review.';
+  const target = new URL('./#reviewerPanel', self.registration.scope).href;
+  event.waitUntil(self.registration.showNotification(title, {
+    body, icon: './icon-192.png', badge: './icon-192.png',
+    tag: 'icu-nursing-question', renotify: true,
+    data: {url: target}
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const target = new URL('./#reviewerPanel', self.registration.scope).href;
+    const windows = await clients.matchAll({type: 'window', includeUncontrolled: true});
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin) {
+        await client.navigate(target);
+        return client.focus();
+      }
+    }
+    return clients.openWindow(target);
+  })());
+});
