@@ -581,4 +581,95 @@ status.textContent='Showing '+result.length.toLocaleString()+' recorded events i
 }catch(e){status.textContent='Analytics unavailable: '+e.message+'. Apply the SQL setup and configure owner access in Supabase.';}};
 $a('anExport').addEventListener('click',()=>{const columns=['created_at','event_name','section_name','hospital_name','anon_id','event_detail'];const csv=[columns.join(','),...latestRows.map(row=>columns.map(k=>'"'+String(row[k]||'').replace(/"/g,'""')+'"').join(','))].join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='icu_smart_hub_usage.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);});
 })();
-</script></body></html>
+</script>
+<!-- Password recovery is intentionally invisible during ordinary app use. -->
+<div id="reviewerRecoveryOverlay" hidden style="position:fixed;inset:0;z-index:9999;background:#0b2438db;overflow:auto;padding:32px 14px">
+  <section role="dialog" aria-modal="true" aria-labelledby="recoveryHeading" style="max-width:480px;margin:8vh auto;background:white;padding:26px;border-radius:16px;box-shadow:0 18px 60px #0003">
+    <h2 id="recoveryHeading">Nurse Reviewer — Set New Password</h2>
+    <p>This secure form is available only through a valid password recovery link sent to your email.</p>
+    <form id="reviewerRecoveryForm">
+      <label for="recoveryPassword">New password</label>
+      <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="At least 12 characters">
+      <label for="recoveryPasswordConfirm">Confirm new password</label>
+      <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="Repeat password">
+      <button id="recoverySaveButton" type="submit">Save New Password</button>
+    </form>
+    <p id="recoveryMessage" role="status" aria-live="polite"></p>
+    <button id="recoveryCloseButton" type="button" style="background:#63788b">Close</button>
+  </section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const overlay=document.getElementById('reviewerRecoveryOverlay');
+  const form=document.getElementById('reviewerRecoveryForm');
+  const message=document.getElementById('recoveryMessage');
+  const save=document.getElementById('recoverySaveButton');
+  let recoveryAccessToken=null;
+  const base='https://wvtbfqgjqvzxhrwddchw.supabase.co';
+  const key='sb_publishable_62oJ0YumOSvNyqX_VGGExA_zRciO96J';
+  const close=()=>{
+    recoveryAccessToken=null;
+    form.reset();
+    overlay.hidden=true;
+    overlay.style.display='none';
+    try {history.replaceState({view:'reviewerPanel'},'',location.pathname+location.search+'#reviewerPanel');} catch {}
+  };
+  document.getElementById('recoveryCloseButton').addEventListener('click',close);
+
+  // Supabase recovery redirects contain #access_token=...&type=recovery
+  // This form is never added to navigation and is never shown for normal visitors.
+  const fragment=location.hash.startsWith('#')?location.hash.substring(1):'';
+  const params=new URLSearchParams(fragment);
+  if(params.get('type')!=='recovery'||!params.get('access_token'))return;
+  recoveryAccessToken=params.get('access_token');
+  // Remove the token from address bar and browser history immediately.
+  history.replaceState({view:'reviewerPanel'},'',location.pathname+location.search+'#reviewerPanel');
+  window.addEventListener('load',async()=>{
+    overlay.hidden=false;
+    overlay.style.display='block';
+    form.hidden=true;
+    message.textContent='Checking secure recovery link...';
+    try {
+      const headers={'apikey':key,'Authorization':'Bearer '+recoveryAccessToken};
+      const userResp=await fetch(base+'/auth/v1/user',{headers,cache:'no-store'});
+      if(!userResp.ok)throw Error('Recovery link has expired or is invalid. Request a new password recovery email.');
+      const user=await userResp.json();
+      if(!user.id)throw Error('Invalid account.');
+      const membership=await fetch(base+'/rest/v1/nursing_reviewers?select=user_id&user_id=eq.'+encodeURIComponent(user.id),{headers,cache:'no-store'});
+      if(!membership.ok)throw Error('Unable to verify reviewer authorization. Please try again.');
+      const rows=await membership.json();
+      if(!Array.isArray(rows)||!rows.some(r=>r.user_id===user.id))throw Error('This account is not authorized as a nursing reviewer.');
+      form.hidden=false;
+      message.textContent='Enter a new password for your reviewer account.';
+    } catch(e) {
+      recoveryAccessToken=null;
+      message.textContent=e.message;
+    }
+  });
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(!recoveryAccessToken)return;
+    const first=document.getElementById('recoveryPassword').value;
+    const second=document.getElementById('recoveryPasswordConfirm').value;
+    if(first.length<12){message.textContent='Use at least 12 characters.';return;}
+    if(first!==second){message.textContent='Passwords do not match.';return;}
+    save.disabled=true;
+    message.textContent='Saving new password...';
+    try {
+      const result=await fetch(base+'/auth/v1/user',{
+        method:'PUT',
+        headers:{'apikey':key,'Authorization':'Bearer '+recoveryAccessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({password:first})
+      });
+      if(!result.ok)throw Error('Could not save password. Request a fresh recovery email and try again.');
+      recoveryAccessToken=null;
+      form.reset();
+      form.hidden=true;
+      message.textContent='Password updated successfully. Close this window and sign in through Nurse Reviewer Login.';
+    }catch(e){message.textContent=e.message;}
+    finally{save.disabled=false;}
+  });
+})();
+</script>
+</body></html>
