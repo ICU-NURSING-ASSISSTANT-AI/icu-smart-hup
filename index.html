@@ -31,7 +31,7 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
 .video-topics{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}.video-topics button{background:#e4f0f9;color:#174b6d;border:1px solid #c8ddea}.video-topics button.active{background:var(--blue);color:#fff}.video-card h3{overflow-wrap:anywhere}
 #discussionForum label{display:block;font-weight:650;margin-top:12px}#discussionForum input,#discussionForum select,#discussionForum textarea{display:block;max-width:100%}.forum-danger{background:#a52a35;margin:6px}.forum-report{background:#64748b;margin:6px}.forum-admin-card{padding:12px;border:1px solid #dce7f0;border-radius:10px;margin:10px 0}.forum-admin-card p{white-space:pre-wrap}</style><style>.sc-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:20px 0}.sc-tab{flex:1;min-width:90px;background:#eaf3f9;color:#173f5b;border:1px solid #bfd6e6}.sc-tab.sc-active{background:#176c9c;color:white}.sc-tab small{display:block;font-weight:normal;margin-top:4px}.sc-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0}.sc-toolbar button{padding:8px 12px}.sc-tablewrap{overflow-x:auto;border:1px solid #dbe7f0;border-radius:12px}.sc-table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}.sc-table th{background:#eaf3fa;color:#123a58;padding:13px;white-space:nowrap}.sc-table td{padding:12px;border-top:1px solid #e4edf4;overflow-wrap:anywhere}.sc-table td:first-child{font-weight:700;color:#185c82;white-space:nowrap}.sc-table tbody tr:nth-child(even){background:#f8fbfe}.sc-copy{font-size:12px;padding:7px 10px}.sc-empty{text-align:center;color:#65798b;padding:24px!important}@media(max-width:600px){.sc-table{font-size:12px}.sc-table th,.sc-table td{padding:9px 7px}.sc-copy{padding:7px 8px}}</style><style>
 .an-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:18px 0}.an-metric{background:#eff7fc;border:1px solid #dceaf4;border-radius:12px;padding:17px}.an-metric strong{display:block;font-size:26px;color:#125780;margin-top:8px}.an-bars{display:grid;gap:12px}.an-bar{background:#e7f0f7;border-radius:20px;overflow:hidden;height:13px}.an-bar span{display:block;background:#1872a6;height:100%}.an-row{display:flex;justify-content:space-between;gap:10px}.an-row small{color:#5d7183}.an-private{font-size:12px;color:#64748b}
-</style></head><body>
+</style><style id="privatePoliciesEnhancement">.private-unit-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.private-unit-tabs button{flex:1;min-width:95px;background:#e7f1f9;color:#153b5b;border:1px solid #c8ddea}.private-unit-tabs button.selected{background:#1872a6;color:#fff}.private-unit-tabs span{font-size:12px;opacity:.8}.private-policy-entry{display:flex;align-items:center;gap:12px;justify-content:space-between}.private-policy-entry>span{overflow-wrap:anywhere;flex:1}.private-policy-entry button{flex:none;font-size:13px;padding:8px 12px}.private-policy-entry small{color:#66798d}</style></head><body>
 <header><button id="menuToggle" class="top-button" type="button" aria-label="Open navigation menu" aria-controls="appSidebar" aria-expanded="false">☰</button><div><h1>ICU Smart Hub</h1><p>Al Baha Health Cluster | Nursing Resources</p></div><div class="top-spacer"></div><span id="connectionBadge" class="connection-pill" role="status">● Online</span><button id="notificationBell" class="top-button" type="button" aria-label="Nursing notifications" title="Nursing notifications" style="position:relative">🔔<span id="notificationCount" hidden style="position:absolute;top:-5px;right:-5px;background:#e84b4b;color:white;border-radius:99px;padding:2px 5px;font-size:11px">0</span></button><button id="topHome" class="top-button" type="button" aria-label="Home">⌂</button></header>
 <div id="menuBackdrop"></div><nav id="appSidebar" aria-label="Main navigation"><div class="sidebar-head"><strong>ICU Smart Hub</strong><button id="closeMenu" type="button" aria-label="Close menu">✕</button></div><div class="sidebar-links">
 <button data-view="home"><span>🏠</span> Home</button><button data-view="policies"><span>📚</span> Policies & Procedures</button><button data-view="protocols"><span>🧭</span> Protocols & Pathways</button><button data-view="calculator"><span>🧮</span> Clinical Calculators</button><button data-view="assistant"><span>🔎</span> Smart Assistant</button><button data-view="ai-policy-assistant"><span>🤖</span> AI Policy Assistant</button><button data-view="videos"><span>🎥</span> Educational Videos</button><button data-view="nursingExpert"><span>🩺</span> Ask Nursing Expert</button><button data-view="nibcoSupply"><span>🏥</span> NUPCO Medical Supply</button><button data-view="meetingRoom"><span>📅</span> Meeting Room</button><button data-view="offlineLibrary"><span>📥</span> Offline Library</button><button data-view="usageSettings"><span>📈</span> Usage & Privacy</button><button data-view="reviewerPanel"><span>🔐</span> Nurse Reviewer Login</button>
@@ -64,6 +64,16 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
   <button type="button" id="privatePolicyLoad">View Policies</button>
   <button type="button" id="privatePolicyClear">Clear Access</button>
   <p id="privatePolicyStatus" role="status"></p>
+  <div id="privatePolicyBrowser" hidden>
+    <div class="private-unit-tabs" role="group" aria-label="Policy department">
+      <button type="button" data-private-unit="ICU" class="selected">ICU <span id="policyCountICU"></span></button>
+      <button type="button" data-private-unit="NICU">NICU <span id="policyCountNICU"></span></button>
+      <button type="button" data-private-unit="PICU">PICU <span id="policyCountPICU"></span></button>
+    </div>
+    <label for="privatePolicySearch">Search policies in selected department</label>
+    <input type="search" id="privatePolicySearch" placeholder="Search by policy title, code or filename" autocomplete="off">
+    <p id="privatePolicyCount" class="status" role="status"></p>
+  </div>
   <ul id="privatePolicyList" class="policy-list"></ul>
 </div>
 </section>
@@ -354,54 +364,103 @@ $('reviewerLogout').onclick=()=>{reviewerToken=null;$('anOpen').hidden=true;$('a
 window.showPanel=showPanel;window.selectPolicyUnit=selectPolicyUnit;window.selectHospital=selectHospital;window.renderPolicyFiles=renderPolicyFiles;window.calculateVolume=calculateVolume;window.searchTopic=searchTopic;
 
 
-// Private document listing. No access codes are stored in localStorage or embedded in this file.
-// The server must enforce hospital/section access and rate limits.
+// Private document browser: files are listed by a server-authorized hospital/section endpoint.
+// Access codes remain only in JS memory for the current page/session, not in storage or URLs.
 const PRIVATE_DOCS_ENDPOINT = SUPABASE_URL + '/functions/v1/get-private-documents';
 const privateDocSessions = {policies:null, protocols:null};
+const PRIVATE_UNITS=['ICU','NICU','PICU'];
+let privatePolicyUnit='ICU';
+function privateFileName(file){return String(typeof file==='string'?file:(file.name||file.path||'Document'));}
+function privateFilePath(file){return String(typeof file==='string'?file:(file.path||file.name||''));}
+function privateFileUnit(file){
+  const value=privateFilePath(file).replace(/\\/g,'/');
+  const parts=value.split('/').map(v=>v.toUpperCase());
+  const match=parts.find(v=>PRIVATE_UNITS.includes(v));
+  if(match)return match;
+  const label=String((typeof file==='object'&&file)?(file.unit||file.department||file.category||''):'').toUpperCase();
+  return PRIVATE_UNITS.includes(label)?label:'OTHER';
+}
 function resetPrivateDocs(section) {
   const prefix=section==='policies'?'privatePolicy':'privateProtocol';
   privateDocSessions[section]=null;
   $(prefix+'Code').value='';
   $(prefix+'List').replaceChildren();
   $(prefix+'Status').textContent='Access cleared.';
+  if(section==='policies'){$('privatePolicyBrowser').hidden=true;$('privatePolicySearch').value='';privatePolicyUnit='ICU';}
+}
+function renderPrivatePolicyFiles(){
+  const session=privateDocSessions.policies;
+  if(!session)return;
+  const list=$('privatePolicyList'),query=$('privatePolicySearch').value.trim().toLocaleLowerCase();
+  list.replaceChildren();
+  const counts=Object.fromEntries(PRIVATE_UNITS.map(u=>[u,session.files.filter(f=>privateFileUnit(f)===u).length]));
+  for(const unit of PRIVATE_UNITS){$('policyCount'+unit).textContent='('+counts[unit]+')';}
+  document.querySelectorAll('[data-private-unit]').forEach(b=>{b.classList.toggle('selected',b.dataset.privateUnit===privatePolicyUnit);b.setAttribute('aria-pressed',String(b.dataset.privateUnit===privatePolicyUnit));});
+  const selected=session.files.filter(f=>privateFileUnit(f)===privatePolicyUnit && privateFileName(f).toLocaleLowerCase().includes(query));
+  $('privatePolicyCount').textContent=selected.length+' of '+counts[privatePolicyUnit]+' policies in '+privatePolicyUnit+'.';
+  for(const f of selected){
+    const li=document.createElement('li');li.className='private-policy-entry';
+    const name=document.createElement('span');name.textContent='📄 '+privateFileName(f);
+    const open=document.createElement('button');open.type='button';open.textContent='Open PDF';
+    open.addEventListener('click',()=>openPrivatePolicy(f,open));
+    li.append(name,open);list.append(li);
+  }
+  if(!selected.length){const li=document.createElement('li');li.textContent='No matching policies for this department.';list.append(li);}
+  const uncategorized=session.files.filter(f=>privateFileUnit(f)==='OTHER').length;
+  if(uncategorized){const li=document.createElement('li');li.className='status';li.textContent=uncategorized+' file(s) lack an ICU/NICU/PICU folder in the server response. Check folder paths in Supabase if expected files are missing.';list.append(li);}
+}
+async function openPrivatePolicy(file,button){
+  const session=privateDocSessions.policies;
+  if(!session){$('privatePolicyStatus').textContent='Please enter your hospital access code again.';return;}
+  const path=privateFilePath(file);
+  if(!path){$('privatePolicyStatus').textContent='File path is missing.';return;}
+  // Open a blank tab synchronously so mobile Safari does not block the asynchronous result.
+  const tab=window.open('','_blank');
+  if(tab){tab.document.title='Opening policy';tab.document.body.textContent='Checking permission to open PDF…';}
+  button.disabled=true;
+  $('privatePolicyStatus').textContent='Requesting secure document access…';
+  try{
+    const response=await fetch(PRIVATE_DOCS_ENDPOINT,{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+      body:JSON.stringify({hospital:session.hospital,section:'policies',access_code:session.code,action:'view',path}),
+      cache:'no-store'
+    });
+    if(!response.ok)throw Error(response.status===401||response.status===403?'Access denied. Re-enter a valid hospital code.':'Secure viewing unavailable (HTTP '+response.status+').');
+    const data=await response.json();
+    const url=data.signedUrl||data.signed_url||data.url||data.downloadUrl;
+    if(!url||typeof url!=='string')throw Error('The Supabase function does not yet provide secure PDF viewing. Its server-side action "view" must return a signed URL.');
+    const parsed=new URL(url);
+    if(parsed.protocol!=='https:'||parsed.hostname!==new URL(SUPABASE_URL).hostname||!parsed.pathname.includes('/storage/v1/object/sign/'))throw Error('The server did not return a valid Supabase signed document URL.');
+    if(tab)tab.location.replace(parsed.href);else window.location.assign(parsed.href);
+    $('privatePolicyStatus').textContent='Document access granted.';
+  }catch(e){if(tab){tab.document.body.textContent=e.message;}$('privatePolicyStatus').textContent=e.message;}
+  finally{button.disabled=false;}
 }
 async function listPrivateDocs(section) {
   const prefix=section==='policies'?'privatePolicy':'privateProtocol';
   const hospital=$(prefix+'Hospital').value, code=$(prefix+'Code').value.trim();
   const status=$(prefix+'Status'), list=$(prefix+'List'), button=$(prefix+'Load');
-  list.replaceChildren();
-  privateDocSessions[section]=null;
+  list.replaceChildren();privateDocSessions[section]=null;
+  if(section==='policies')$('privatePolicyBrowser').hidden=true;
   if(!code){status.textContent='Please enter your access code.';return;}
   button.disabled=true;status.textContent='Checking access...';
   try{
     const response=await fetch(PRIVATE_DOCS_ENDPOINT,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
-      body:JSON.stringify({hospital,section,access_code:code,action:'list'}),
-      cache:'no-store'
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+      body:JSON.stringify({hospital,section,access_code:code,action:'list'}),cache:'no-store'
     });
-    if(!response.ok){
-      status.textContent=response.status===401||response.status===403
-        ?'Access denied. Check the code or try again later.'
-        :'Unable to load documents (HTTP '+response.status+').';
-      return;
-    }
+    if(!response.ok){status.textContent=response.status===401||response.status===403?'Access denied. Check the code or try again later.':'Unable to load documents (HTTP '+response.status+').';return;}
     const data=await response.json();
     if(!data.success||!Array.isArray(data.files))throw Error('Unexpected server response');
-    privateDocSessions[section]={hospital};
-    if(!data.files.length){status.textContent='No documents available.';return;}
+    privateDocSessions[section]={hospital,code,files:data.files};
     status.textContent=data.files.length+' document(s) available.';
-    for(const f of data.files){
-      const li=document.createElement('li');
-      li.textContent='📄 '+String(typeof f==='string'?f:(f.name||f.path||'Document'));
-      list.append(li);
+    if(section==='policies'){
+      privatePolicyUnit='ICU';$('privatePolicySearch').value='';$('privatePolicyBrowser').hidden=false;
+      renderPrivatePolicyFiles();
+    }else{
+      for(const f of data.files){const li=document.createElement('li');li.textContent='📄 '+privateFileName(f);list.append(li);}
+      if(data.files.length){const li=document.createElement('li');li.className='status';li.textContent='Protocols listing is unchanged; secure opening needs server support.';list.append(li);}
     }
-    // File opening will be enabled only after the server's authorized
-    // short-lived viewing action and its response format are confirmed.
-    const note=document.createElement('p');
-    note.className='status';
-    note.textContent='Document listing is connected. Secure viewing requires a separate server-side access check.';
-    list.after(note);
   }catch(e){status.textContent='Unable to load documents: '+e.message;}
   finally{button.disabled=false;$(prefix+'Code').value='';}
 }
@@ -410,6 +469,8 @@ for(const [section,prefix] of [['policies','privatePolicy'],['protocols','privat
   $(prefix+'Clear').addEventListener('click',()=>resetPrivateDocs(section));
   $(prefix+'Hospital').addEventListener('change',()=>resetPrivateDocs(section));
 }
+document.querySelectorAll('[data-private-unit]').forEach(b=>b.addEventListener('click',()=>{privatePolicyUnit=b.dataset.privateUnit;renderPrivatePolicyFiles();}));
+$('privatePolicySearch').addEventListener('input',renderPrivatePolicyFiles);
 
 const OFFLINE_SHELL='icu-shell-v3',OFFLINE_DOCS='icu-docs-v3',OFFLINE_VIDEOS='icu-videos-v3';
 function readJSON(k,fallback){try{const x=localStorage.getItem(k);return x?JSON.parse(x):fallback;}catch{return fallback;}}
