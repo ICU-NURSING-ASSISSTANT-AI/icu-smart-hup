@@ -68,7 +68,7 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
     <div class="private-unit-tabs" role="group" aria-label="Policy department">
       <button type="button" data-private-unit="ICU" class="selected">ICU <span id="policyCountICU"></span></button>
       <button type="button" data-private-unit="NICU">NICU <span id="policyCountNICU"></span></button>
-      <button type="button" data-private-unit="PICU">PICU <span id="policyCountPICU"></span></button>
+      <button type="button" data-private-unit="PICU">PICU <span id="policyCountPICU"></span></button><button type="button" data-private-unit="OTHER">Other / Unclassified <span id="policyCountOTHER"></span></button>
     </div>
     <label for="privatePolicySearch">Search policies in selected department</label>
     <input type="search" id="privatePolicySearch" placeholder="Search by policy title, code or filename" autocomplete="off">
@@ -368,17 +368,22 @@ window.showPanel=showPanel;window.selectPolicyUnit=selectPolicyUnit;window.selec
 // Access codes remain only in JS memory for the current page/session, not in storage or URLs.
 const PRIVATE_DOCS_ENDPOINT = SUPABASE_URL + '/functions/v1/get-private-documents';
 const privateDocSessions = {policies:null, protocols:null};
-const PRIVATE_UNITS=['ICU','NICU','PICU'];
+const PRIVATE_UNITS=['ICU','NICU','PICU','OTHER'];
 let privatePolicyUnit='ICU';
 function privateFileName(file){return String(typeof file==='string'?file:(file.name||file.path||'Document'));}
 function privateFilePath(file){return String(typeof file==='string'?file:(file.path||file.name||''));}
 function privateFileUnit(file){
-  const value=privateFilePath(file).replace(/\\/g,'/');
-  const parts=value.split('/').map(v=>v.toUpperCase());
-  const match=parts.find(v=>PRIVATE_UNITS.includes(v));
-  if(match)return match;
-  const label=String((typeof file==='object'&&file)?(file.unit||file.department||file.category||''):'').toUpperCase();
-  return PRIVATE_UNITS.includes(label)?label:'OTHER';
+  // The edge function can return a basename, relative path or a structured object.
+  // Prefer an explicit storage folder; only then infer from document filename.
+  const obj=(file&&typeof file==='object')?file:{};
+  const raw=[obj.path,obj.storage_path,obj.fullPath,obj.full_path,obj.key,typeof file==='string'?file:''].filter(Boolean).join('/').replace(/\\/g,'/');
+  const parts=raw.toUpperCase().split('/');
+  for(const p of parts){if(PRIVATE_UNITS.slice(0,3).includes(p))return p;}
+  const metadata=String(obj.unit||obj.department||obj.category||'').trim().toUpperCase();
+  if(PRIVATE_UNITS.slice(0,3).includes(metadata))return metadata;
+  const name=privateFileName(file).toUpperCase();
+  const m=name.match(/(?:^|[^A-Z])(NICU|PICU|ICU)(?=[^A-Z]|$)/);
+  return m?m[1]:'OTHER';
 }
 function resetPrivateDocs(section) {
   const prefix=section==='policies'?'privatePolicy':'privateProtocol';
@@ -406,8 +411,15 @@ function renderPrivatePolicyFiles(){
     li.append(name,open);list.append(li);
   }
   if(!selected.length){const li=document.createElement('li');li.textContent='No matching policies for this department.';list.append(li);}
-  const uncategorized=session.files.filter(f=>privateFileUnit(f)==='OTHER').length;
-  if(uncategorized){const li=document.createElement('li');li.className='status';li.textContent=uncategorized+' file(s) lack an ICU/NICU/PICU folder in the server response. Check folder paths in Supabase if expected files are missing.';list.append(li);}
+  const uncategorized=counts.OTHER;
+  if(uncategorized&&privatePolicyUnit!=='OTHER'){
+    const li=document.createElement('li');li.className='status';
+    li.textContent=uncategorized+' file(s) could not be categorized. Open Other / Unclassified to see them.';list.append(li);
+  }
+  if(!session.files.length){
+    const li=document.createElement('li');li.className='notice';
+    li.textContent='Supabase returned 0 files. The get-private-documents server function may only list the hospital root, not ICU/NICU/PICU subfolders. This cannot be fixed by changing index.html alone; the Edge Function needs recursive folder listing.';list.append(li);
+  }
 }
 async function openPrivatePolicy(file,button){
   const session=privateDocSessions.policies;
@@ -453,7 +465,7 @@ async function listPrivateDocs(section) {
     const data=await response.json();
     if(!data.success||!Array.isArray(data.files))throw Error('Unexpected server response');
     privateDocSessions[section]={hospital,code,files:data.files};
-    status.textContent=data.files.length+' document(s) available.';
+    status.textContent=data.files.length+' PDF/document item(s) returned by Supabase.'+(data.files.length===0?' If PDFs exist in subfolders, the Edge Function must list these folders too.':'');
     if(section==='policies'){
       privatePolicyUnit='ICU';$('privatePolicySearch').value='';$('privatePolicyBrowser').hidden=false;
       renderPrivatePolicyFiles();
