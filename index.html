@@ -58,7 +58,7 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
 <section class="panel" id="policies"><h2>📚 Policies & Procedures</h2>
 <div class="result-card" id="privatePoliciesAccess">
   <h3>🔐 Secure Policy Access</h3>
-  <p>Select the policy library, then enter its access code.</p>
+  <p>Select your hospital to enter its access code, or choose EMNA POLICIES for public access.</p>
   <div class="policy-library-grid" role="group" aria-label="Select policy library">
     <button type="button" class="policy-library-tile selected" data-policy-library="KFH" aria-pressed="true"><span class="policy-library-icon" aria-hidden="true">🏥</span><span>King Fahad Hospital</span></button>
     <button type="button" class="policy-library-tile" data-policy-library="PMSH" aria-pressed="false"><span class="policy-library-icon" aria-hidden="true">🏥</span><span>Prince Mishari Hospital</span></button>
@@ -72,8 +72,11 @@ main{max-width:1160px;margin:26px auto}.intro{background:linear-gradient(120deg,
     <option value="MIKWAH HOSPITAL">Al Mikhwah Hospital</option>
     <option value="EMNA">EMNA POLICIES</option>
   </select>
-  <label for="privatePolicyCode">Policies access code</label>
-  <input id="privatePolicyCode" type="password" autocomplete="off" placeholder="Enter access code">
+  <div id="privatePolicyCodeArea">
+    <label for="privatePolicyCode">Policies access code</label>
+    <input id="privatePolicyCode" type="password" autocomplete="off" placeholder="Enter access code">
+  </div>
+  <p id="emnaPublicNote" class="status" hidden>🌐 EMNA POLICIES is open to everyone — no access code required.</p>
   <button type="button" id="privatePolicyLoad">View Policies</button>
   <button type="button" id="privatePolicyClear">Clear Access</button>
   <p id="privatePolicyStatus" role="status"></p>
@@ -426,7 +429,7 @@ function renderPrivatePolicyFiles(){
     open.addEventListener('click',()=>openPrivatePolicy(f,open));
     li.append(name,open);list.append(li);
   }
-  if(!selected.length){const li=document.createElement('li');li.textContent='No matching policies for this department.';list.append(li);}
+  if(!selected.length){const li=document.createElement('li');li.textContent=isEmna?'No matching EMNA policies.':'No matching policies for this department.';list.append(li);}
   const uncategorized=counts.OTHER;
   if(!isEmna&&uncategorized&&privatePolicyUnit!=='OTHER'){
     const li=document.createElement('li');li.className='status';
@@ -434,12 +437,24 @@ function renderPrivatePolicyFiles(){
   }
   if(!session.files.length){
     const li=document.createElement('li');li.className='notice';
-    li.textContent='Supabase returned 0 files. The get-private-documents server function may only list the hospital root, not ICU/NICU/PICU subfolders. This cannot be fixed by changing index.html alone; the Edge Function needs recursive folder listing.';list.append(li);
+    li.textContent=isEmna?'No public EMNA policies have been uploaded yet. Upload PDF files to the public Supabase Storage bucket emna-policies.':'Supabase returned 0 files. The get-private-documents server function may only list the hospital root, not ICU/NICU/PICU subfolders. This cannot be fixed by changing index.html alone; the Edge Function needs recursive folder listing.';list.append(li);
   }
 }
 async function openPrivatePolicy(file,button){
   const session=privateDocSessions.policies;
-  if(!session){$('privatePolicyStatus').textContent='Please enter your hospital access code again.';return;}
+  if(!session){$('privatePolicyStatus').textContent='Please select a policy library first.';return;}
+  // EMNA documents are stored separately in a public bucket. Never ask the private-documents
+  // endpoint to bypass hospital access codes, and never expose the other hospitals' PDFs.
+  if(session.hospital==='EMNA' && session.public){
+    const path=privateFilePath(file);
+    if(!path || path.startsWith('/') || path.split('/').some(p=>!p||p==='.'||p==='..') || !/\.pdf$/i.test(path)){
+      $('privatePolicyStatus').textContent='Invalid EMNA PDF path.';return;
+    }
+    const url=SUPABASE_URL+'/storage/v1/object/public/'+EMNA_PUBLIC_BUCKET+'/'+path.split('/').map(encodeURIComponent).join('/');
+    window.open(url,'_blank','noopener,noreferrer');
+    $('privatePolicyStatus').textContent='Opening public EMNA policy.';
+    return;
+  }
   const path=privateFilePath(file);
   if(!path){$('privatePolicyStatus').textContent='File path is missing.';return;}
   // Open a blank tab synchronously so mobile Safari does not block the asynchronous result.
@@ -464,12 +479,56 @@ async function openPrivatePolicy(file,button){
   }catch(e){if(tab){tab.document.body.textContent=e.message;}$('privatePolicyStatus').textContent=e.message;}
   finally{button.disabled=false;}
 }
+// EMNA is an intentionally PUBLIC policy library, separate from the 3 hospitals.
+// Create a PUBLIC Supabase Storage bucket called "emna-policies"; give anonymous users
+// SELECT access to this bucket only. Hospital policies remain in the private bucket.
+const EMNA_PUBLIC_BUCKET='emna-policies';
+async function listPublicEmnaPolicies(){
+  const status=$('privatePolicyStatus'),list=$('privatePolicyList'),button=$('privatePolicyLoad');
+  list.replaceChildren();
+  privateDocSessions.policies=null;
+  $('privatePolicyBrowser').hidden=true;
+  button.disabled=true;
+  status.textContent='Loading public EMNA policies…';
+  try{
+    const files=[];
+    // Supabase Storage listings are paginated. EMNA PDFs are placed at bucket root.
+    for(let offset=0;offset<10000;offset+=100){
+      const response=await fetch(SUPABASE_URL+'/storage/v1/object/list/'+EMNA_PUBLIC_BUCKET,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+        body:JSON.stringify({prefix:'',limit:100,offset,sortBy:{column:'name',order:'asc'}}),
+        cache:'no-store'
+      });
+      if(!response.ok){
+        if(response.status===400||response.status===403||response.status===404)
+          throw Error('EMNA public library is not configured yet. Create the public emna-policies bucket and enable public read/list permission in Supabase.');
+        throw Error('Unable to read EMNA library (HTTP '+response.status+').');
+      }
+      const batch=await response.json();
+      if(!Array.isArray(batch))throw Error('Unexpected EMNA document list response.');
+      files.push(...batch.filter(f=>f&&typeof f.name==='string'&&/\.pdf$/i.test(f.name)&&f.id).map(f=>({name:f.name,path:f.name})));
+      if(batch.length<100)break;
+    }
+    // Ignore a response if the visitor switched to a hospital while loading.
+    if($('privatePolicyHospital').value!=='EMNA')return;
+    privateDocSessions.policies={hospital:'EMNA',public:true,files};
+    privatePolicyUnit='ICU';$('privatePolicySearch').value='';
+    $('privatePolicyBrowser').hidden=false;
+    status.textContent=files.length?files.length+' public EMNA PDF(s) available — no access code needed.':'No EMNA policies uploaded yet. Upload PDF documents to the public emna-policies bucket in Supabase.';
+    renderPrivatePolicyFiles();
+  }catch(e){
+    if($('privatePolicyHospital').value==='EMNA')status.textContent=e.message;
+  }finally{button.disabled=false;}
+}
+
 async function listPrivateDocs(section) {
   const prefix=section==='policies'?'privatePolicy':'privateProtocol';
   const hospital=$(prefix+'Hospital').value, code=$(prefix+'Code').value.trim();
   const status=$(prefix+'Status'), list=$(prefix+'List'), button=$(prefix+'Load');
   list.replaceChildren();privateDocSessions[section]=null;
   if(section==='policies')$('privatePolicyBrowser').hidden=true;
+  if(section==='policies'&&hospital==='EMNA'){return listPublicEmnaPolicies();}
   if(!code){status.textContent='Please enter your access code.';return;}
   button.disabled=true;status.textContent='Checking access...';
   try{
@@ -499,6 +558,14 @@ for(const [section,prefix] of [['policies','privatePolicy'],['protocols','privat
 }
 function syncPolicyLibraryTiles(){
   const selected=$('privatePolicyHospital').value;
+  const isEmna=selected==='EMNA';
+  $('privatePolicyCodeArea').hidden=isEmna;
+  $('emnaPublicNote').hidden=!isEmna;
+  $('privatePolicyClear').hidden=isEmna;
+  $('privatePolicyLoad').textContent=isEmna?'Refresh EMNA Policies':'View Policies';
+  if(isEmna && !privateDocSessions.policies){
+    $('privatePolicyStatus').textContent='Public access — no code required.';
+  }
   document.querySelectorAll('[data-policy-library]').forEach(b=>{
     const active=b.dataset.policyLibrary===selected;
     b.classList.toggle('selected',active);
@@ -512,9 +579,9 @@ document.querySelectorAll('[data-policy-library]').forEach(b=>b.addEventListener
     selector.dispatchEvent(new Event('change',{bubbles:true}));
   }
   syncPolicyLibraryTiles();
-  $('privatePolicyCode').focus();
+  if(selector.value!=='EMNA')$('privatePolicyCode').focus();
 }));
-$('privatePolicyHospital').addEventListener('change',syncPolicyLibraryTiles);
+$('privatePolicyHospital').addEventListener('change',()=>{syncPolicyLibraryTiles();if($('privatePolicyHospital').value==='EMNA')listPrivateDocs('policies');});
 syncPolicyLibraryTiles();
 document.querySelectorAll('[data-private-unit]').forEach(b=>b.addEventListener('click',()=>{privatePolicyUnit=b.dataset.privateUnit;renderPrivatePolicyFiles();}));
 $('privatePolicySearch').addEventListener('input',renderPrivatePolicyFiles);
